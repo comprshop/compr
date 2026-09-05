@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>COMPR — Compare</title>
+
+  <link
+    rel="stylesheet"
+    href="styles/compare.css"
+  >
+</head>
+
+<body>
+
+  <main class="page">
+
+    <!-- HEADER -->
+    <header class="header">
+
+      <div class="header-brand">
+
+        <div class="brand-row">
+
+          <img
+            src="icons/icon48.png"
+            alt="COMPR"
+            class="header-logo"
+          >
+
+          <div>
+
+            <h1 class="logo">
+              COMPR
+            </h1>
+
+            <p class="subtitle">
+              Compare before you buy.
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="header-actions">
+
+        <label class="language-control">
+          <span>Language</span>
+          <select data-language-select aria-label="Language"></select>
+        </label>
+
+        <label class="country-control">
+          <span>Country</span>
+          <select id="countrySelect" aria-label="Your country"></select>
+        </label>
+
+        <span
+          id="productCount"
+          class="product-count"
+        >
+          0 items
+        </span>
+
+        <button
+          id="clearButton"
+          class="clear-button"
+          type="button"
+        >
+          CLEAR ALL
+        </button>
+
+      </div>
+
+    </header>
+
+    <section id="overviewAccount" class="overview-account" aria-live="polite">
+      <div class="overview-account-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 3 4.5 7.2v5.5c0 4.1 3.1 7 7.5 8.3 4.4-1.3 7.5-4.2 7.5-8.3V7.2L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.7 12 2.1 2.1 4.6-4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="overview-account-copy">
+        <span>YOUR COMPR ACCOUNT</span>
+        <strong id="overviewPlan">Checking account…</strong>
+        <p id="overviewUsage"></p>
+        <p id="overviewBilling" class="overview-billing"></p>
+        <div id="overviewUsageTrack" class="overview-usage-track hidden" aria-hidden="true"><span id="overviewUsageBar"></span></div>
+      </div>
+      <span id="overviewFounding" class="overview-founding hidden"></span>
+      <div id="overviewActions" class="overview-account-actions hidden">
+        <button type="button" data-overview-checkout="pro">Founding updates: Pro</button>
+        <button type="button" data-overview-checkout="ultimate" class="is-primary">Founding updates: Ultimate</button>
+      </div>
+      <button id="overviewManage" class="overview-manage hidden" type="button">Manage subscription</button>
+      <button id="overviewRefresh" class="overview-refresh" type="button" aria-label="Refresh account">Refresh</button>
+    </section>
+
+    <!-- INTRO -->
+    <section class="comparison-intro">
+
+      <div class="intro-copy">
+
+        <span class="eyebrow">
+          SAVE MONEY WITH COMPR
+        </span>
+
+        <h2>
+          Compare products
+        </h2>
+
+        <p>
+          See prices clearly, spot important differences and find a better deal.
+        </p>
+
+      </div>
+
+
+      <!-- PRICE CHECK -->
+      <div class="coming-feature">
+
+        <span class="coming-soon">
+          COMPR'S SMART PRICE CHECK
+        </span>
+
+        <div class="coming-feature-content">
+
+          <div>
+
+            <h3>
+              Find This Cheaper
+            </h3>
+
+            <p>
+              Search for the exact same product at a better price.
+            </p>
+
+            <p class="data-disclosure">
+              Starting a price check sends the selected product's details and page URL to COMPR's secure backend and search provider. <a href="https://comprshop.github.io/compr-website/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a>
+            </p>
+
+          </div>
+
+          <span class="search-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <section class="insights" aria-label="Collection overview">
+      <div class="insight-intro">
+        <span>YOUR OVERVIEW</span>
+        <strong>Decide with clarity.</strong>
+      </div>
+      <div class="insight">
+        <strong id="insightProducts">0</strong>
+        <span>saved products</span>
+      </div>
+      <div class="insight">
+        <strong id="insightCategories">0</strong>
+        <span>lowest price</span>
+      </div>
+      <div class="insight">
+        <strong id="insightPriceRange">—</strong>
+        <span id="insightPriceLabel">potential difference</span>
+      </div>
+    </section>
+
+    <p id="currencyNote" class="currency-note"></p>
+
+    <section class="controls" aria-label="Product controls">
+      <label class="search-control">
+        <span class="visually-hidden">Search saved products</span>
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search products, brands or stores"
+          autocomplete="off"
+        >
+      </label>
+
+      <label>
+        <span>Category</span>
+        <select id="categoryFilter">
+          <option value="all">All categories</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Size / variant</span>
+        <input
+          id="sizeFilter"
+          type="text"
+          placeholder="e.g. M or 42"
+          autocomplete="off"
+        >
+      </label>
+
+      <label>
+        <span>Sort by</span>
+        <select id="sortSelect">
+          <option value="newest">Newest saved</option>
+          <option value="oldest">Oldest saved</option>
+          <option value="price-low">Price: low to high</option>
+          <option value="price-high">Price: high to low</option>
+          <option value="brand">Brand: A–Z</option>
+          <option value="availability">Available first</option>
+        </select>
+      </label>
+
+      <label class="group-control">
+        <input id="groupToggle" type="checkbox">
+        <span>Group by category</span>
+      </label>
+
+      <label class="group-control availability-control">
+        <input id="availableOnly" type="checkbox">
+        <span>Available only</span>
+      </label>
+
+      <details class="data-menu">
+        <summary aria-label="Open collection options">•••</summary>
+        <div class="data-menu-panel">
+          <button id="exportButton" class="menu-button" type="button">
+            Export backup
+          </button>
+          <button id="importButton" class="menu-button" type="button">
+            Import backup
+          </button>
+        </div>
+      </details>
+
+      <input
+        id="importFile"
+        class="visually-hidden"
+        type="file"
+        accept="application/json,.json"
+      >
+    </section>
+
+    <p id="resultsSummary" class="results-summary" aria-live="polite"></p>
+
+    <div
+      id="toast"
+      class="page-toast hidden"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+
+    <!-- PRODUCTS -->
+    <section
+      id="products"
+      class="products-grid"
+    >
+
+      <div class="empty-state">
+        Products loading...
+      </div>
+
+    </section>
+
+
+  </main>
+
+
+  <!-- SHARED CORE -->
+  <script src="shared/browserAdapter.js"></script>
+  <script src="shared/product.js"></script>
+  <script src="shared/currency.js"></script>
+  <script src="shared/storage.js"></script>
+  <script src="shared/i18n.js"></script>
+  <script src="shared/runtimeConfig.js"></script>
+  <script src="shared/auth.js"></script>
+  <script src="shared/apiClient.js"></script>
+  <script src="shared/reliability.js"></script>
+
+  <!-- FIND THIS CHEAPER -->
+  <script src="matching/productMatcher.js"></script>
+  <script src="search/buildSearchQuery.js"></script>
+  <script src="search/demoCatalog.js"></script>
+  <script src="search/searchProvider.js"></script>
+
+  <!-- COMPARE MODULES -->
+  <script src="compare/price.js"></script>
+  <script src="compare/collection.js"></script>
+  <script src="compare/productCard.js"></script>
+
+  <dialog id="cheaperDialog" class="cheaper-dialog" aria-labelledby="cheaperDialogTitle">
+    <div class="cheaper-dialog-shell">
+      <header class="cheaper-dialog-header">
+        <div>
+          <span class="prototype-label">COMPR PRICE CHECK</span>
+          <h2 id="cheaperDialogTitle">Find This Cheaper</h2>
+          <p id="cheaperDialogSubtitle">Searching verified retailer data…</p>
+        </div>
+        <button id="cheaperDialogClose" class="dialog-close" type="button" aria-label="Close Find This Cheaper"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </header>
+
+      <section id="cheaperCurrentProduct" class="cheaper-current" aria-label="Selected product"></section>
+
+      <section id="cheaperSavingsHero" class="cheaper-savings-hero hidden" aria-live="polite"></section>
+
+      <details class="search-plan" aria-label="Search details">
+        <summary>Search details</summary>
+        <div>
+          <span>SEARCH QUERY</span>
+          <strong id="cheaperQuery">—</strong>
+        </div>
+        <div class="search-plan-actions">
+          <a id="cheaperWebSearch" class="web-search-button" href="#" target="_blank" rel="noopener noreferrer">
+            Exact product search
+          </a>
+          <a id="cheaperBroadSearch" class="web-search-button secondary" href="#" target="_blank" rel="noopener noreferrer">
+            Similar shopping
+          </a>
+        </div>
+      </details>
+
+      <div id="cheaperStatus" class="cheaper-status" role="status" aria-live="polite"></div>
+      <section id="cheaperResults" class="cheaper-results" aria-label="Matching retailer offers"></section>
+
+      <footer class="cheaper-dialog-footer">
+        COMPR only shows confident matches. Always verify the retailer price and availability before buying.
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- MAIN COMPARE CONTROLLER: loaded after the dialog exists -->
+  <script src="compare.js"></script>
+
+</body>
+</html>

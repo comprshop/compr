@@ -1,0 +1,101 @@
+# Existing independent repositories
+/find-cheaper-backend/
+/website-live/
+/tools/SadTalker/
+
+# Dependencies
+**/node_modules/
+**/.venv/
+**/venv/
+
+# Environment files and local configuration
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+*.local
+*.local.*
+
+# Logs, caches and test output
+*.log
+*.log.*
+last-known-good-cache.json
+**/coverage/
+**/.nyc_output/
+**/.cache/
+**/.pytest_cache/
+
+# Archives and generated build output
+*.zip
+*.tar
+*.tar.gz
+*.7z
+/build/
+/dist/
+**/build/
+**/dist/
+**/out/
+**/artifacts/
+
+# Screenshots and generated preview output
+**/screenshots/
+**/screenshots-*/
+**/screenshot-output/
+**/preview-output/
+*-screenshot.png
+
+# Temporary and backup output
+/tmp/
+/backups/
+**/tmp/
+**/temp/
+*.tmp
+*.bak
+
+# Local Supabase and Docker state
+**/.supabase/
+**/supabase/.temp/
+**/docker-data/
+**/docker-volumes/
+docker-compose.override.yml
+
+# Secrets, certificates and signing material
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+*.mobileprovision
+*.provisionprofile
+*.keystore
+*.jks
+*.secrets.*
+
+# Xcode generated and user-specific state
+**/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# OS and editor state
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Legacy snapshots and unrelated local content
+/compr/
+/V.0.2.3/
+/website/
+/github-upload/
+/marketing/
+/store-assets/
+/tiktok-assets/

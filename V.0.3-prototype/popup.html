@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>COMPR</title>
+
+  <link
+    rel="stylesheet"
+    href="styles/popup.css"
+  >
+</head>
+
+<body>
+
+  <main class="app">
+
+    <section id="safariExperience" class="safari-experience hidden" aria-labelledby="safariTitle">
+      <header class="safari-header">
+        <div class="safari-brand"><img src="icons/icon48.png" alt=""><strong>COMPR</strong></div>
+        <span>Private by default</span>
+      </header>
+      <div id="safariLive" class="sr-only" role="status" aria-live="polite"></div>
+      <section id="safariPanel" class="safari-panel" aria-busy="false">
+        <div id="safariLoader" class="safari-loader" aria-hidden="true"></div>
+        <p id="safariEyebrow" class="safari-eyebrow"></p>
+        <h1 id="safariTitle">Starting COMPR…</h1>
+        <p id="safariCopy" class="safari-copy">Preparing a private guest session.</p>
+        <article id="safariProduct" class="safari-product hidden">
+          <div class="safari-image-frame"><img id="safariImage" alt=""></div>
+          <div><h2 id="safariProductName"></h2><p id="safariStore"></p><strong id="safariCurrentPrice"></strong></div>
+        </article>
+        <section id="safariSavings" class="safari-savings hidden">
+          <span>Verified cheaper match</span><strong id="safariSaving"></strong>
+          <dl><div><dt>Current total</dt><dd id="safariOldTotal" aria-label="Current total price"></dd><small id="safariCurrentRetailer"></small></div><div><dt>Deal total</dt><dd id="safariDealTotal" aria-label="Deal total price"></dd><small id="safariDealRetailer"></small></div></dl>
+          <p id="safariShipping"></p><div id="safariTrust" class="safari-trust"></div>
+        </section>
+        <button id="safariPrimary" class="safari-primary hidden" type="button"></button>
+        <p id="safariPrivacy" class="safari-privacy">Nothing is checked until you tap.</p>
+        <p id="safariUsageNote" class="safari-usage-note hidden"></p>
+        <div id="safariActions" class="safari-actions hidden">
+          <button id="safariSave" type="button">Save &amp; track</button>
+          <button id="safariCouponsToggle" type="button" aria-expanded="false">Coupons</button>
+          <button id="safariDetailsToggle" type="button" aria-expanded="false">Details</button>
+        </div>
+        <section id="safariCoupons" class="safari-disclosure hidden" aria-label="Coupons"></section>
+        <section id="safariDetails" class="safari-disclosure hidden" aria-label="Product details"></section>
+      </section>
+      <section id="safariProSheet" class="safari-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="safariProTitle">
+        <div class="safari-sheet-card">
+          <span>Track this price</span>
+          <h2 id="safariProTitle">COMPR Pro</h2>
+          <p>Save products and get notified when their price drops.</p>
+          <fieldset class="safari-plan-options"><legend class="sr-only">Choose a COMPR Pro plan</legend>
+            <label><input id="safariPlanMonthly" type="radio" name="safariPlan" value="monthly"><span><strong>Monthly</strong><small>€2.99/month</small></span></label>
+            <label class="is-best"><input id="safariPlanYearly" type="radio" name="safariPlan" value="yearly" checked><span><strong>Yearly <em>Best value</em></strong><small>€19.99/year · Save 44%</small></span></label>
+          </fieldset>
+          <button id="safariTryPro" class="safari-primary" type="button">Continue with COMPR Pro</button>
+          <button id="safariNotNow" class="safari-sheet-secondary" type="button">Not now</button>
+        </div>
+      </section>
+    </section>
+
+    <!-- HEADER -->
+    <header class="header">
+
+      <div class="brand">
+        <img
+          src="icons/icon48.png"
+          alt="COMPR"
+          class="brand-logo"
+        >
+
+        <div>
+          <h1>COMPR</h1>
+          <p>Shop smarter.</p>
+        </div>
+      </div>
+
+      <button
+        id="headerCompareButton"
+        class="saved-count-button"
+        type="button"
+        aria-label="Open saved products"
+      >
+        <span id="savedCount">0</span> saved
+      </button>
+
+      <select id="countrySelect" class="country-select" aria-label="Your country"></select>
+
+      <select class="language-select" data-language-select aria-label="Language"></select>
+
+    </header>
+
+    <section class="collection-pulse" aria-label="Collection progress">
+      <div class="pulse-copy">
+        <span class="pulse-eyebrow">YOUR SMART SHOPPING LIST</span>
+        <strong id="momentumTitle">Start your shortlist</strong>
+        <p id="momentumText">Save products before you decide.</p>
+      </div>
+      <div class="pulse-progress" aria-hidden="true">
+        <span id="momentumBar"></span>
+      </div>
+    </section>
+
+    <section id="accountCard" class="account-card" aria-live="polite">
+      <div class="account-summary">
+        <div class="account-plan-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3 4.5 7.2v5.5c0 4.1 3.1 7 7.5 8.3 4.4-1.3 7.5-4.2 7.5-8.3V7.2L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.7 12 2.1 2.1 4.6-4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="account-copy">
+          <span class="account-eyebrow">YOUR COMPR ACCOUNT</span>
+          <div class="account-plan-line">
+            <strong id="accountPlan">Checking account…</strong>
+            <span id="accountBadge" class="account-badge hidden"></span>
+          </div>
+          <p id="accountUsage"></p>
+          <p id="accountDetails" class="account-details"></p>
+        </div>
+        <button id="accountRefresh" class="account-refresh" type="button" aria-label="Refresh account" title="Refresh account">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.1 9a7 7 0 0 1 11.4-2.5L20 9M4 15l2.5 2.5A7 7 0 0 0 17.9 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div id="usageTrack" class="usage-track hidden" aria-hidden="true"><span id="usageBar"></span></div>
+      <div id="upgradeOptions" class="upgrade-options hidden">
+        <p class="upgrade-heading"><strong>Founding Access</strong><span>Get launch updates. The first 1,000 paid activations receive discounted pricing.</span></p>
+        <button class="upgrade-button" data-checkout-plan="pro" type="button">
+          <span>Founding updates: Pro</span><small>15 price checks each month</small>
+        </button>
+        <button class="upgrade-button upgrade-ultimate" data-checkout-plan="ultimate" type="button">
+          <span>Founding updates: Ultimate</span><small>Unlimited price checks</small>
+        </button>
+      </div>
+      <form id="accountSignIn" class="account-sign-in hidden">
+        <label for="accountEmail">Continue with email</label>
+        <div><input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com" required><button type="submit">Send code</button></div>
+        <small>No password needed. Your email and sign-in data are processed by Supabase and COMPR's email provider. <a href="https://comprshop.github.io/compr-website/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a></small>
+      </form>
+      <form id="accountVerify" class="account-sign-in hidden">
+        <label for="accountOtp">Enter the 8-digit code from your email</label>
+        <div><input id="accountOtp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" placeholder="12345678" required><button type="submit">Sign in</button></div>
+        <button id="accountChangeEmail" class="account-change-email" type="button">Use another email</button>
+      </form>
+      <div id="accountSessionActions" class="account-session-actions hidden">
+        <button id="manageBilling" class="manage-billing hidden" type="button">Manage subscription</button>
+        <button id="accountSignOut" class="account-sign-out" type="button">Sign out</button>
+        <button id="accountDelete" class="account-delete" type="button">Delete account</button>
+      </div>
+      <p id="billingStatus" class="billing-status"></p>
+    </section>
+
+
+    <!-- LOADING -->
+    <section
+      id="loadingState"
+      class="state"
+    >
+      <div class="loader"></div>
+
+      <p>
+        Checking this product…
+      </p>
+    </section>
+
+
+    <!-- PRODUCT FOUND -->
+    <section
+      id="productState"
+      class="product-state hidden"
+    >
+
+      <div class="detected-badge">
+        <span class="status-dot"></span>
+        Product detected
+      </div>
+
+
+      <div class="product-card">
+
+        <div class="product-image-wrapper">
+
+          <img
+            id="productImage"
+            class="product-image"
+            alt="Product"
+          >
+
+        </div>
+
+
+        <div class="product-info">
+
+          <p
+            id="productBrand"
+            class="product-brand"
+          >
+            Brand
+          </p>
+
+          <p id="productCategory" class="product-category">Category</p>
+
+          <h2
+            id="productName"
+            class="product-name"
+          >
+            Product
+          </h2>
+
+          <p
+            id="productPrice"
+            class="product-price"
+          >
+            —
+          </p>
+
+          <p
+            id="productStore"
+            class="product-store"
+          >
+            Store
+          </p>
+
+          <p id="productOriginalPrice" class="product-original-price hidden"></p>
+
+          <p id="productAvailability" class="product-availability">
+            Checking availability…
+          </p>
+
+        </div>
+
+      </div>
+
+      <a
+        id="trustpilotLink"
+        class="store-reviews-link hidden"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Store reviews
+      </a>
+
+
+      <button
+        id="saveButton"
+        class="primary-button"
+        type="button"
+      >
+        Save &amp; Compare
+      </button>
+
+      <aside id="similarWarning" class="similar-warning hidden" aria-live="polite">
+        <div class="similar-warning-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="similar-warning-copy">
+          <span>COMPARE BEFORE YOU BUY</span>
+          <strong id="similarTitle">You saved a similar product</strong>
+          <p id="similarMessage"></p>
+        </div>
+        <button id="similarCompareButton" type="button">COMPARE NOW</button>
+      </aside>
+
+
+      <!-- FIND THIS CHEAPER -->
+      <div class="cheaper-card">
+
+        <div class="cheaper-top">
+
+          <div>
+            <h3>
+              Find This Cheaper
+            </h3>
+          </div>
+
+          <span class="search-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </span>
+
+        </div>
+
+        <p>
+          Check if the same product is available for less.
+        </p>
+
+        <p class="data-disclosure">
+          When you start a price check, COMPR sends this product's details and page URL to its secure backend and search provider. <a href="https://comprshop.github.io/compr-website/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a>
+        </p>
+
+        <button
+          id="cheaperInterestButton"
+          class="secondary-button find-cheaper-primary"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Find This Cheaper</span>
+        </button>
+
+      </div>
+
+
+      <!-- COMPARISONS -->
+      <button
+        id="compareButton"
+        class="compare-link"
+      >
+
+        <div class="compare-left">
+
+          <div class="compare-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+
+          <div class="compare-text">
+
+            <span class="compare-label">
+              COMPR OVERVIEW
+            </span>
+
+            <span class="compare-title">
+              COMPARE SAVED PRODUCTS
+            </span>
+
+          </div>
+
+        </div>
+
+        <span class="compare-arrow">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+
+      </button>
+
+    </section>
+
+
+    <!-- NO PRODUCT FOUND -->
+    <section
+      id="emptyState"
+      class="empty-state hidden"
+    >
+
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l1 12H5L6 8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 9V6a3 3 0 0 1 6 0v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+
+      <h2>
+        You're not on a product page
+      </h2>
+
+      <p class="empty-description">
+        Open a product page to compare prices.
+      </p>
+
+      <div class="steps">
+
+        <div class="step">
+          <span>1</span>
+          <p>Open the page of one specific product</p>
+        </div>
+
+        <div class="step">
+          <span>2</span>
+          <p>Click the COMPR icon in your browser</p>
+        </div>
+
+        <div class="step">
+          <span>3</span>
+          <p>Save it, compare it or find it cheaper</p>
+        </div>
+
+      </div>
+
+      <button
+        id="emptyCompareButton"
+        class="primary-button empty-compare-button"
+        type="button"
+      >
+        VIEW SAVED PRODUCTS
+      </button>
+
+
+      <div class="future-preview">
+
+        <span class="coming-soon">
+          SAVE MONEY WITH COMPR
+        </span>
+
+        <h3>
+          Find This Cheaper
+        </h3>
+
+        <p>
+          COMPR will search for the exact
+          same product at other stores.
+        </p>
+
+      </div>
+
+    </section>
+
+    <button id="chromeStoreReview" class="chrome-store-review" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Review us on the Chrome Web Store
+    </button>
+
+    <div
+      id="toast"
+      class="toast hidden"
+      role="status"
+      aria-live="polite"
+    ></div>
+
+    <div id="comparePrompt" class="prompt-overlay hidden">
+      <section
+        class="compare-prompt"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="comparePromptTitle"
+        aria-describedby="comparePromptText"
+      >
+        <div class="prompt-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11m0 0-3-3m3 3-3 3M17 17H6m0 0 3 3m-3-3 3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <span class="prompt-eyebrow">READY TO COMPARE</span>
+        <h2 id="comparePromptTitle">Two products saved</h2>
+        <p id="comparePromptText">
+          Compare your options now, or keep building your shortlist.
+        </p>
+        <button id="promptCompareButton" class="prompt-primary" type="button">
+          COMPARE NOW
+        </button>
+        <button id="promptAddMoreButton" class="prompt-secondary" type="button">
+          ADD MORE
+        </button>
+      </section>
+    </div>
+
+
+  </main>
+
+
+  <script src="shared/browserAdapter.js"></script>
+  <script src="shared/productEligibility.js"></script>
+  <script src="shared/popupState.js"></script>
+  <script src="shared/safariExperience.js"></script>
+  <script src="shared/product.js"></script>
+  <script src="shared/currency.js"></script>
+  <script src="shared/similarity.js"></script>
+  <script src="shared/storage.js"></script>
+  <script src="shared/i18n.js"></script>
+  <script src="shared/runtimeConfig.js"></script>
+  <script src="shared/auth.js"></script>
+  <script src="shared/apiClient.js"></script>
+  <script src="safari-popup.js"></script>
+  <script src="popup.js"></script>
+
+</body>
+</html>

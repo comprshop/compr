@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>COMPR authenticatietest</title>
+  <style>
+    body{font:16px system-ui;margin:40px;max-width:520px;color:#171722}label,input,button{display:block;width:100%;box-sizing:border-box}label{margin:18px 0 6px;font-weight:700}input,button{padding:12px;border:1px solid #d8d8e2;border-radius:10px}button{margin-top:12px;background:#171722;color:#fff;font-weight:700;cursor:pointer}.status{margin-top:18px;white-space:pre-wrap}.muted{color:#696976;font-size:14px}
+  </style>
+</head>
+<body>
+  <h1>COMPR authenticatietest</h1>
+  <p class="muted">Alleen voor Phase 1-ontwikkeling. Deze pagina is geen definitieve accountinterface.</p>
+  <label for="email">E-mailadres</label>
+  <input id="email" type="email" autocomplete="email">
+  <button id="send" type="button">Stuur Magic Link</button>
+  <button id="verify" type="button">Controleer ingelogd account</button>
+  <button id="logout" type="button">Log uit</button>
+  <div id="status" class="status" role="status"></div>
+  <script src="shared/runtimeConfig.js"></script>
+  <script src="shared/auth.js"></script>
+  <script src="shared/apiClient.js"></script>
+  <script src="auth-test.js"></script>
+</body>
+</html>
