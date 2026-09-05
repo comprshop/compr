@@ -99,3 +99,8 @@ Desktop.ini
 /marketing/
 /store-assets/
 /tiktok-assets/
+
+# Generated root-level extension preview captures
+/compare-refresh*.png
+/popup-refresh*.png
+/popup-static-refresh.png

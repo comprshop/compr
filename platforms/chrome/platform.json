@@ -1,0 +1,6 @@
+{
+  "platform": "chrome",
+  "manifest": "../../V.0.3-prototype/manifest.json",
+  "source": "../../V.0.3-prototype",
+  "notes": "The canonical Chrome manifest and shared extension source remain in V.0.3-prototype."
+}
