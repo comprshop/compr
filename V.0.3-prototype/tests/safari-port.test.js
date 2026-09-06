@@ -79,7 +79,7 @@ test("Chrome and Safari guest behavior is explicitly isolated without browser sn
   assert.match(runtimeConfig, /guestMode:\s*false/);
   assert.match(authJs, /platform !== "safari" \|\| ComprRuntimeConfig\.guestMode !== true/);
   const build = fs.readFileSync(path.join(root, "tools", "build-safari-extension.ps1"), "utf8");
-  assert.match(build, /platform: "safari"/); assert.match(build, /guestMode: true/);
+  assert.match(build, /platform:\s*`"safari`"/); assert.match(build, /guestMode: true/);
   assert.match(popupJs, /isSafariGuest[\s\S]*ensureGuestSession/);
   assert.match(popupJs, /accountSignIn\.classList\.add\("hidden"\)/);
   assert.match(popupJs, /await ComprApi\.resetGuest\(\)[\s\S]*await ComprBrowser\.storage\.local\.clear\(\)/);
@@ -90,9 +90,11 @@ test("Safari guest initialization uses Supabase Auth and never adds a client quo
   assert.doesNotMatch(authJs, /guestUsage|guestQuota|deviceId|installationId/i);
 });
 
-test("build remains validation-only and rejects dev files, secrets and localhost", () => {
+test("build exposes exclusive validation and staging modes and rejects unsafe input", () => {
   const build = fs.readFileSync(path.join(root, "tools", "build-safari-extension.ps1"), "utf8");
-  assert.match(build, /only permits -ValidationOnly/);
+  assert.match(build, /Choose exactly one mode: -ValidationOnly or -StageConverterInput/);
+  assert.match(build, /safari-converter-input/);
+  assert.match(build, /Output must remain under build/);
   assert.match(build, /SAFARI_PRODUCTION_API_URL_REQUIRED/);
   assert.match(build, /\.env/);
   assert.match(build, /service_role/);

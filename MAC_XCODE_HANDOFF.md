@@ -14,7 +14,7 @@ Do not rent or sign in until all of these are decided:
 - Choose provisional identifiers without registering them: container app `<COMPR_APP_BUNDLE_ID>` and web-extension target `<COMPR_EXTENSION_BUNDLE_ID>`. A common provisional relationship is `<COMPR_APP_BUNDLE_ID>.Extension`, but the converter/Xcode result must be inspected before registration.
 - Keep placeholders for `<APPLE_TEAM_ID>`, `<APP_STORE_CONNECT_APP_ID>`, `<APPLE_ACCOUNT>` and `<SIGNING_IDENTITY>` until the account holder acts.
 - Decide the safe transfer route: a private, access-controlled temporary transfer or a future reviewed private Git remote. Do not use a public repository or paste source into prompts.
-- Resolve the current build-input gap: `tools/build-safari-extension.ps1` validates only, calls Windows-specific `npm.cmd`, deletes its temporary directory and deliberately retains no converter input. Before paying for Mac time, add and separately review a non-publishing, cross-platform staging method or approve a one-time clean staging procedure. Do not bypass its validation rules manually.
+- Use the reviewed Windows staging mode to create a persistent converter input. It remains local, performs no conversion or publication, and replaces only its generated output after a complete validation succeeds.
 - Confirm the public COMPR API URL, public Supabase URL/publishable key and callback origin outside this document. Public client configuration is not a server secret, but it still needs production-owner approval. Never transfer a service-role key or private `.env`.
 - Keep Stripe, StoreKit purchases and paid entitlement activation disabled. The Pro sheet is informational UI only.
 
@@ -40,6 +40,15 @@ Absolutely do not transfer:
 - historical release archives and generated marketing media.
 
 Before transfer, produce a file list and scan it locally. After transfer, compare its hash/inventory with the approved source. Do not copy any ignored file merely because it sits below an approved directory.
+
+Run the Windows validation and staging commands from the project root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/build-safari-extension.ps1 -ValidationOnly -ApiBaseUrl "<VERIFIED_PUBLIC_COMPR_API_URL>"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/build-safari-extension.ps1 -StageConverterInput -ApiBaseUrl "<VERIFIED_PUBLIC_COMPR_API_URL>" -ShowInventory
+```
+
+The persistent output is `build/safari-converter-input/`, which is already ignored by Git. `-UseTestFixture` is only for local repeatability tests; fixture output must never be transferred to a Mac or treated as a release candidate. Before transfer, rerun staging with the owner-confirmed public HTTPS API URL, review the printed inventory without exposing configuration values, verify Git still ignores the output, and repeat the secret/personal-path scan. The Apple converter runs only later on the Mac.
 
 ## 3. Mac and Xcode prerequisites
 

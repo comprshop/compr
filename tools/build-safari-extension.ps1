@@ -1,119 +1,42 @@
 param(
   [string]$ApiBaseUrl,
-  [string]$SupabaseUrl = 'https://taosgvfdnblnopaywimf.supabase.co',
-  [string]$SupabaseAnonKey = 'sb_publishable_cZtYQI3ApFTw8kU2a2AoBQ_nGdlSw1W',
-  [string]$AuthCallbackUrl = 'https://comprshop.github.io/compr-website/auth-callback.html',
-  [switch]$ValidationOnly,
-  [switch]$UseTestFixture,
-  [switch]$ShowInventory
+  [string]$SupabaseUrl='https://taosgvfdnblnopaywimf.supabase.co',
+  [string]$SupabaseAnonKey='sb_publishable_cZtYQI3ApFTw8kU2a2AoBQ_nGdlSw1W',
+  [string]$AuthCallbackUrl='https://comprshop.github.io/compr-website/auth-callback.html',
+  [switch]$ValidationOnly,[switch]$StageConverterInput,[string]$OutputPath,
+  [switch]$UseTestFixture,[switch]$ShowInventory
 )
-
-$ErrorActionPreference = 'Stop'
-if (-not $ValidationOnly) { throw 'This preparation script only permits -ValidationOnly; it never creates a ZIP or uploads anything.' }
-if ($UseTestFixture -and $ApiBaseUrl) { throw 'Do not combine -UseTestFixture with -ApiBaseUrl.' }
-$effectiveApi = if ($UseTestFixture) { 'https://api.compr.test' } elseif ($ApiBaseUrl) { $ApiBaseUrl.TrimEnd('/') } else { '' }
-if (-not $effectiveApi) { throw 'SAFARI_PRODUCTION_API_URL_REQUIRED: supply the verified public HTTPS COMPR API URL.' }
-
-$inputs = "$effectiveApi $SupabaseUrl $AuthCallbackUrl"
-if ($inputs -match '(?i)(placeholder|replace[_-]?with|example\.(com|org|net)|\.invalid(?:/|\s|$))') { throw 'Placeholder configuration is forbidden.' }
-if (-not $UseTestFixture -and $effectiveApi -notmatch '^https://') { throw 'The production COMPR API must use HTTPS.' }
-if ($effectiveApi -match '(?i)(localhost|127\.0\.0\.1)' -or $SupabaseUrl -notmatch '^https://' -or $AuthCallbackUrl -notmatch '^https://') {
-  throw 'Local or insecure endpoints are forbidden.'
-}
-if ($SupabaseAnonKey -match '(?i)(service.role|service_role|secret|sk_test|sk_live)' -or $SupabaseAnonKey.Length -lt 20) {
-  throw 'Only a public Supabase anon/publishable key may enter the extension.'
-}
-
-$root = Split-Path -Parent $PSScriptRoot
-$source = Join-Path $root 'V.0.3-prototype'
-$platform = Join-Path $root 'platforms\safari'
-$requiredSource = @(
-  'manifest.json','popup.html','popup.js','safari-popup.js','compare.html','compare.js','background.js','content.js',
-  'auth-receiver.html','auth-receiver.js','privacy.md','shared\browserAdapter.js','shared\auth.js',
-  'shared\apiClient.js','shared\storage.js','shared\reliability.js','shared\safariExperience.js','matching\productMatcher.js',
-  'search\searchProvider.js','search\buildSearchQuery.js'
-)
-foreach ($item in $requiredSource) {
-  $base = if ($item -eq 'manifest.json') { $platform } else { $source }
-  if (-not (Test-Path -LiteralPath (Join-Path $base $item) -PathType Leaf)) { throw "Missing Safari build input: $item" }
-}
-
-Push-Location (Join-Path $root 'find-cheaper-backend')
-try { & npm.cmd test; if ($LASTEXITCODE -ne 0) { throw 'Backend tests failed.' } } finally { Pop-Location }
-Push-Location $source
-try {
-  & node --test 'tests/integration.test.js' 'tests/browser-adapter.test.js' 'tests/safari-port.test.js'
-  if ($LASTEXITCODE -ne 0) { throw 'Extension integration or Safari tests failed.' }
-  & node 'tests/core.test.js'; if ($LASTEXITCODE -ne 0) { throw 'Extension core tests failed.' }
-  & node 'tests/find-cheaper.test.js'; if ($LASTEXITCODE -ne 0) { throw 'Find This Cheaper tests failed.' }
-} finally { Pop-Location }
-
-$temporary = Join-Path (Join-Path $root 'tmp') ("safari-validation-" + [guid]::NewGuid().ToString('N'))
-try {
-  New-Item -ItemType Directory -Path $temporary -Force | Out-Null
-  $files = @('popup.html','popup.js','safari-popup.js','compare.html','compare.js','background.js','content.js','auth-receiver.html','auth-receiver.js','privacy.md')
-  $directories = @('icons','styles','shared','detectors','matching','compare','search')
-  foreach ($file in $files) { Copy-Item -LiteralPath (Join-Path $source $file) -Destination $temporary }
-  foreach ($directory in $directories) { Copy-Item -LiteralPath (Join-Path $source $directory) -Destination $temporary -Recurse }
-  Copy-Item -LiteralPath (Join-Path $platform 'manifest.json') -Destination (Join-Path $temporary 'manifest.json')
-  Copy-Item -LiteralPath (Join-Path $platform 'platform.js') -Destination (Join-Path $temporary 'platform.js')
-  Remove-Item -LiteralPath (Join-Path $temporary 'search\demoCatalog.js') -Force
-  Remove-Item -LiteralPath (Join-Path $temporary 'matching\matcherTest.js') -Force
-
-  $popupPath = Join-Path $temporary 'popup.html'
-  $popup = (Get-Content -Raw -LiteralPath $popupPath).Replace('<script src="popup.js"></script>', '<script src="platform.js"></script><script src="popup.js"></script>')
-  Set-Content -LiteralPath $popupPath -Value $popup -Encoding utf8
-  $comparePath = Join-Path $temporary 'compare.html'
-  $compare = (Get-Content -Raw -LiteralPath $comparePath) -replace '\s*<script src="search/demoCatalog\.js"></script>', ''
-  Set-Content -LiteralPath $comparePath -Value $compare -Encoding utf8
-
-  $providerPath = Join-Path $temporary 'search\searchProvider.js'
-  $provider = Get-Content -Raw -LiteralPath $providerPath
-  $provider = $provider.Replace('const BACKEND_SEARCH_URL = "http://127.0.0.1:8787/api/search";', 'const BACKEND_SEARCH_URL = ComprRuntimeConfig.apiBaseUrl + "/api/search";')
-  $provider = $provider.Replace('local-demo-catalog', 'backend').Replace('offline-demo', 'unavailable')
-  $provider = $provider.Replace('ComprDemoCatalog', 'undefined')
-  $provider = $provider.Replace('COMPR development backend unavailable; using offline demo', 'COMPR backend unavailable')
-  Set-Content -LiteralPath $providerPath -Value $provider -Encoding utf8
-
-  $runtimeMode = if ($UseTestFixture) { 'test-fixture' } else { 'production' }
-  $runtime = @"
-// Generated public Safari configuration. Never add private server secrets here.
-const ComprRuntimeConfig = Object.freeze({
-  apiBaseUrl: "$effectiveApi",
-  supabaseUrl: "$($SupabaseUrl.TrimEnd('/'))",
-  supabaseAnonKey: "$SupabaseAnonKey",
-  authCallbackUrl: "$AuthCallbackUrl",
-  mode: "$runtimeMode",
-  betaMode: true,
-  betaAccessUrl: "$(([uri]::new([uri]$AuthCallbackUrl, '.')).AbsoluteUri.TrimEnd('/'))/#beta-access",
-  storeReviewUrl: "",
-  platform: "safari",
-  guestMode: true
-});
-"@
-  Set-Content -LiteralPath (Join-Path $temporary 'shared\runtimeConfig.js') -Value $runtime -Encoding utf8
-
-  $manifestPath = Join-Path $temporary 'manifest.json'
-  $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
-  $manifest.host_permissions = @("$effectiveApi/*", "$($SupabaseUrl.TrimEnd('/'))/*", 'https://www.ecb.europa.eu/*')
-  $manifest.web_accessible_resources[0].matches = @((([uri]$AuthCallbackUrl).GetLeftPart('Authority')) + '/*')
-  $manifest | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $manifestPath -Encoding utf8
-
-  if ($manifest.manifest_version -ne 3 -or $manifest.background.service_worker -ne 'background.js') { throw 'Safari MV3 manifest is invalid.' }
-  if (@($manifest.permissions | Where-Object { $_ -notin @('storage','activeTab','scripting') }).Count) { throw 'Safari manifest requests an unexpected permission.' }
-  if ($manifest.host_permissions -contains '<all_urls>') { throw 'Safari build may not request permanent all-sites access.' }
-  if ($manifest.content_security_policy.extension_pages -ne "script-src 'self'; object-src 'self'") { throw 'Safari CSP is invalid.' }
-  $forbidden = Get-ChildItem -LiteralPath $temporary -Recurse -File | Where-Object {
-    $_.Name -match '(?i)(^\.env|\.test\.js$|test\.js$|readme|audit|checklist)' -or $_.Extension -in @('.zip','.ps1')
-  }
-  if ($forbidden) { throw "Development files entered the Safari build: $($forbidden.FullName -join ', ')" }
-  $unsafe = Get-ChildItem -LiteralPath $temporary -Recurse -File | Select-String -Pattern 'sk_test_|sk_live_|whsec_|service_role|127\.0\.0\.1|localhost|demoCatalog|offline-demo|eval\s*\(|new\s+Function\s*\(' -AllMatches
-  if ($unsafe) { throw 'Secret, development, demo or remote-code marker entered the Safari build.' }
-  $inventory = Get-ChildItem -LiteralPath $temporary -Recurse -File | ForEach-Object { $_.FullName.Substring($temporary.Length + 1).Replace('\','/') } | Sort-Object
-  if ($ShowInventory) { $inventory | ForEach-Object { Write-Host " - $_" } }
-  Write-Host "Safari validation passed ($($inventory.Count) files); no artifact was retained."
-} finally {
-  if ((Test-Path -LiteralPath $temporary) -and $temporary.StartsWith((Join-Path $root 'tmp'), [System.StringComparison]::OrdinalIgnoreCase)) {
-    Remove-Item -LiteralPath $temporary -Recurse -Force
-  }
-}
+$ErrorActionPreference='Stop'
+if(@($ValidationOnly,$StageConverterInput|Where-Object{$_}).Count-ne 1){throw 'Choose exactly one mode: -ValidationOnly or -StageConverterInput.'}
+if($OutputPath-and-not $StageConverterInput){throw '-OutputPath requires -StageConverterInput.'}
+if($UseTestFixture-and $ApiBaseUrl){throw 'Do not combine -UseTestFixture with -ApiBaseUrl.'}
+$api=if($UseTestFixture){'https://api.compr.test'}elseif($ApiBaseUrl){$ApiBaseUrl.TrimEnd('/')}else{''}
+function SafeUrl($value,$label,$fixture=$false){$u=$null;if(-not[uri]::TryCreate($value,[UriKind]::Absolute,[ref]$u)-or $u.Scheme-ne'https'){throw "$label must be HTTPS."};if(-not $fixture-and($u.UserInfo-or $u.Host-match'(?i)localhost|^127\.|^::1$|^\[::1\]$|\.invalid$|example\.(com|org|net)$')){throw "$label is unsafe."};$u}
+if(-not $api){throw 'SAFARI_PRODUCTION_API_URL_REQUIRED'}
+$apiUri=SafeUrl $api 'API URL' $UseTestFixture;$supabaseUri=SafeUrl $SupabaseUrl 'Supabase URL';$callbackUri=SafeUrl $AuthCallbackUrl 'Callback URL'
+if($SupabaseAnonKey-notmatch'^[A-Za-z0-9._-]{20,}$'-or$SupabaseAnonKey-match'(?i)service.role|secret|sk_live|sk_test'){throw 'Only a public Supabase key is allowed.'}
+$root=[IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot));$source=Join-Path $root 'V.0.3-prototype';$platform=Join-Path $root 'platforms\safari';$build=[IO.Path]::GetFullPath((Join-Path $root 'build'));$tmp=[IO.Path]::GetFullPath((Join-Path $root 'tmp'))
+$files=@(
+'popup.html','popup.js','safari-popup.js','compare.html','compare.js','background.js','content.js','auth-receiver.html','auth-receiver.js','privacy.md',
+'icons\icon16.png','icons\icon32.png','icons\icon48.png','icons\icon128.png','styles\popup.css','styles\compare.css',
+'shared\browserAdapter.js','shared\productEligibility.js','shared\popupState.js','shared\safariExperience.js','shared\product.js','shared\currency.js','shared\similarity.js','shared\storage.js','shared\i18n.js','shared\auth.js','shared\apiClient.js','shared\reliability.js',
+'detectors\price.js','detectors\brand.js','detectors\color.js','detectors\material.js','detectors\sizes.js','detectors\availability.js','detectors\policies.js','detectors\discountCodes.js','detectors\category.js','detectors\productId.js','detectors\productName.js',
+'matching\productMatcher.js','search\buildSearchQuery.js','search\searchProvider.js','compare\price.js','compare\collection.js','compare\productCard.js')
+foreach($f in $files){if(-not(Test-Path -LiteralPath(Join-Path $source $f)-PathType Leaf)){throw "Missing input: $f"}}
+foreach($f in @('manifest.json','platform.js')){if(-not(Test-Path -LiteralPath(Join-Path $platform $f)-PathType Leaf)){throw "Missing platform input: $f"}}
+function Gate{Push-Location(Join-Path $root 'find-cheaper-backend');try{& npm.cmd test;if($LASTEXITCODE){throw 'Backend tests failed'}}finally{Pop-Location};Push-Location $source;try{& node --test tests/integration.test.js tests/browser-adapter.test.js tests/safari-port.test.js;if($LASTEXITCODE){throw 'Extension tests failed'};& node tests/core.test.js;if($LASTEXITCODE){throw 'Core tests failed'};& node tests/find-cheaper.test.js;if($LASTEXITCODE){throw 'Find tests failed'}}finally{Pop-Location}}
+function CopyInput($to){New-Item -ItemType Directory -Force $to|Out-Null;foreach($f in $files){$d=Join-Path $to $f;New-Item -ItemType Directory -Force(Split-Path $d)|Out-Null;Copy-Item -LiteralPath(Join-Path $source $f)-Destination $d};Copy-Item -LiteralPath(Join-Path $platform 'manifest.json')-Destination(Join-Path $to 'manifest.json');Copy-Item -LiteralPath(Join-Path $platform 'platform.js')-Destination(Join-Path $to 'platform.js')}
+function Overrides($to){
+$p=Join-Path $to 'popup.html';$s=Get-Content -Raw $p;$n='<script src="popup.js"></script>';if(([regex]::Matches($s,[regex]::Escape($n)).Count)-ne 1-or$s-match'<script src="platform\.js">'){throw 'Unexpected popup layout'};$s=$s.Replace($n,'<script src="platform.js"></script><script src="popup.js"></script>');Set-Content $p $s -Encoding utf8
+$p=Join-Path $to 'compare.html';$s=Get-Content -Raw $p;if(($s|Select-String '<script src="search/demoCatalog\.js"></script>' -AllMatches).Matches.Count-ne 1){throw 'Unexpected compare layout'};$s=$s-replace'\s*<script src="search/demoCatalog\.js"></script>','';Set-Content $p $s -Encoding utf8
+$p=Join-Path $to 'search\searchProvider.js';$s=Get-Content -Raw $p;$old='const BACKEND_SEARCH_URL = "http://127.0.0.1:8787/api/search";';if(([regex]::Matches($s,[regex]::Escape($old)).Count)-ne 1){throw 'Unexpected provider layout'};$s=$s.Replace($old,'const BACKEND_SEARCH_URL = ComprRuntimeConfig.apiBaseUrl + "/api/search";').Replace('local-demo-catalog','backend').Replace('offline-demo','unavailable').Replace('ComprDemoCatalog','undefined').Replace('COMPR development backend unavailable; using offline demo','COMPR backend unavailable');Set-Content $p $s -Encoding utf8
+$mode=if($UseTestFixture){'test-fixture'}else{'production'};$vals=@($api,$SupabaseUrl.TrimEnd('/'),$SupabaseAnonKey,$AuthCallbackUrl,$mode,(([uri]::new($callbackUri,'.')).AbsoluteUri.TrimEnd('/')+'/#beta-access'))|ForEach-Object{$_|ConvertTo-Json -Compress};$runtime="// Generated public Safari configuration. Never add private server secrets here.`nconst ComprRuntimeConfig = Object.freeze({`n  apiBaseUrl: $($vals[0]),`n  supabaseUrl: $($vals[1]),`n  supabaseAnonKey: $($vals[2]),`n  authCallbackUrl: $($vals[3]),`n  mode: $($vals[4]),`n  betaMode: true,`n  betaAccessUrl: $($vals[5]),`n  storeReviewUrl: `"`",`n  platform: `"safari`",`n  guestMode: true`n});`n";Set-Content(Join-Path $to 'shared\runtimeConfig.js')$runtime -Encoding utf8
+$p=Join-Path $to 'manifest.json';$m=Get-Content -Raw $p|ConvertFrom-Json;$m.host_permissions=@("$api/*","$($SupabaseUrl.TrimEnd('/'))/*",'https://www.ecb.europa.eu/*');$m.web_accessible_resources[0].matches=@($callbackUri.GetLeftPart('Authority')+'/*');$m|ConvertTo-Json -Depth 20|Set-Content $p -Encoding utf8}
+function Validate($to){$m=Get-Content -Raw(Join-Path $to 'manifest.json')|ConvertFrom-Json;if($m.manifest_version-ne3-or$m.background.service_worker-ne'background.js'-or$null-ne$m.content_scripts-or$m.host_permissions-contains'<all_urls>'-or@($m.permissions|Where-Object{$_-notin@('storage','activeTab','scripting')}).Count){throw 'Unsafe manifest'};$inv=@(Get-ChildItem $to -Recurse -File|ForEach-Object{$_.FullName.Substring($to.Length+1).Replace('\','/')}|Sort-Object);$expected=@($files+@('manifest.json','platform.js','shared\runtimeConfig.js')|ForEach-Object{$_.Replace('\','/')}|Sort-Object -Unique);if(@($inv|Where-Object{$_-notin$expected}).Count-or@($expected|Where-Object{$_-notin$inv}).Count){throw 'Inventory mismatch'};$bad=@(Get-ChildItem $to -Recurse -Force|Where-Object{$_.Name-match'(?i)^\.git|^\.env|node_modules|screenshots?|\.map$|\.log$|\.zip$|\.ps1$|readme|audit|checklist|test\.js$|fixture|preview|deriveddata|\.p12$|\.pem$|\.key$|\.mobileprovision$'});if($bad){throw 'Forbidden output file'};$unsafe=@(Get-ChildItem $to -Recurse -File|Select-String -Pattern'sk_live_','sk_test_','whsec_','service_role','127\.0\.0\.1','localhost','demoCatalog','offline-demo','[A-Za-z]:\\Users\\','C:/Users/','/Users/[^<\s]+' -AllMatches);if($unsafe){throw 'Unsafe output content'};foreach($j in Get-ChildItem $to -Recurse -File -Filter *.js){& node --check $j.FullName;if($LASTEXITCODE){throw"Syntax failure: $($j.Name)"}};$html=Get-Content -Raw(Join-Path $to 'popup.html');if(([regex]::Matches($html,'<script src="platform\.js"></script>').Count)-ne1-or$html.IndexOf('<script src="platform.js"></script>')-gt$html.IndexOf('<script src="popup.js"></script>')){throw 'Platform load order failure'};return $inv}
+Gate
+$workRoot=if($ValidationOnly){$tmp}else{$build}
+$workPrefix=if($ValidationOnly){'safari-validation-'}else{'.safari-stage-'}
+New-Item -ItemType Directory -Force -Path $workRoot|Out-Null
+$work=Join-Path $workRoot ($workPrefix+[guid]::NewGuid().ToString('N'))
+$keep=$false
+try{CopyInput $work;Overrides $work;$inventory=@(Validate $work);if($ShowInventory){$inventory|ForEach-Object{Write-Host " - $_"}};if($ValidationOnly){Write-Host "Safari validation passed ($($inventory.Count) files); no artifact was retained."}else{$out=if($OutputPath){if([IO.Path]::IsPathRooted($OutputPath)){$OutputPath}else{Join-Path $root $OutputPath}}else{Join-Path $build 'safari-converter-input'};$out=[IO.Path]::GetFullPath($out);$prefix=$build.TrimEnd('\')+'\';if(-not$out.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)){throw 'Output must remain under build.'};if(Test-Path $out){$resolved=[IO.Path]::GetFullPath((Resolve-Path $out).Path);if(-not$resolved.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)){throw 'Unsafe existing output'};Remove-Item -LiteralPath $resolved -Recurse -Force};Move-Item $work $out;$keep=$true;Write-Host "Safari converter input staged ($($inventory.Count) files).";Write-Host 'Public Supabase client configuration source must be owner-confirmed before transfer.'}}finally{if(-not$keep-and(Test-Path $work)){Remove-Item -LiteralPath $work -Recurse -Force}}
