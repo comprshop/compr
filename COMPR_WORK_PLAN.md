@@ -20,7 +20,7 @@ Afzonderlijke toestemming nodig voor push (Render Auto-Deploy), productieconnect
 | Pakket | Status | Resultaat / bewijs |
 |---|---|---|
 | 1. Schemafase verifier, back-uptools en herstelvoorstel | Afgerond | Backendcheckpoint `c60e8e3f98a83ce141025d3a9fccd1fad7dc7dd5`; 102/102 backendtests; 27 inventory- en 42 exportveiligheidstests; bestaande export structureel pre-012 PASS |
-| 2. Geïsoleerde hersteltest | Voorstel; nog niet goedgekeurd | Eerst opslagversleuteling en beschikbare geschikte omgeving bevestigen; werkelijk dataherstel strikt scheiden van synthetische tests |
+| 2A. Geïsoleerde hersteltest | Afgerond | Volledige pre-012-datarestore en aparte schema-only synthetische tests PASS op officiële Supabase PostgreSQL 17.6-image; exacte container en volume verwijderd |
 | 3. Guestbackend naar productie | Niet goedgekeurd | Herstelbewijs, retentie/abusebesluit, gecontroleerde migratie 012, flag-off-regressie, activering als laatste |
 | 4. Echte Safari/iPhone-validatie | Niet goedgekeurd | Productiegeschikte staging, Mac/Xcode, permissions, UX/accessibility en apparaatchecks |
 | 5. Betaalde lancering | Niet goedgekeurd | Betaalmodel vaststellen, echte entitlement-/StoreKit-validatie, herstel aankopen, privacy/support en releasegates |
@@ -37,6 +37,14 @@ Actuele Apple-checklist: SAFARI_APPLE_TEST_CHECKLIST.md. Deploymentreferentie: f
 - Backend: PowerShell- en JavaScript-syntax PASS, `npm test` 102/102 PASS, legacytest PASS, diff/secret/padcontroles PASS. Alleen synthetische fixturemetadata staat in Git; geen back-upinhoud.
 - Herstelarchitectuur staat in `find-cheaper-backend/DATABASE_BACKUP_RECOVERY.md`: archiefcontrole, werkelijk dataherstel en synthetische functietests zijn drie afzonderlijke bewijsniveaus.
 
-## Voorgesteld volgend pakket: 2A geïsoleerde herstelomgeving
+## Bewijs pakket 2A
 
-Nog apart goed te keuren. Eerst moet de eigenaar actieve versleuteling van de gekozen lokale opslag via een bevoegde Windows-controle bevestigen. Daarna: maak een disposable PostgreSQL 17/Supabase-compatibele Dockeromgeving met een intern netwerk zonder productieroutes; inventariseer en map uitsluitend vereiste extensies/rollen; voer eerst een synthetische restore-dry-run uit; leg fail-closed restore- en verwijdergrenzen vast; en test metadata, constraints, RLS en functies met synthetische records. Een restore van de echte back-up blijft een afzonderlijke gevoelige handeling en wordt pas uitgevoerd na expliciete toestemming, bevestigde versleuteling en een vooraf gecontroleerde exacte cleanupscope.
+- Lokaal getest met reeds aanwezige officiële image `public.ecr.aws/supabase/postgres:17.6.1.165`, exact op digest vastgezet, netwerk `none`, geen poorten, back-up read-only en een uniek disposable volume.
+- Exact-ownerrestore blokkeerde door een managed-platform event-trigger/owner-superuserafwijking. De schone herhaling met expliciet `--no-owner` voltooide zonder meldingen; ACL-verwerking bleef ingeschakeld. Dit bewijst geen exacte productieownership.
+- Alle 106 pre-012-vereisten, 26 gevalideerde constraints, nul public-FK-orphans, migratie 011, RLS/grants/sequences en afwezigheid van 012 zijn bevestigd. Alleen aantallen zijn gelezen.
+- Afzonderlijke schema-only database: Auth-foundation, normale vijf-checkquota, zesde blokkade, retentie en accountcascade PASS met één synthetische gebruiker in een teruggedraaide transactie; nul residue.
+- Container en volume zijn exact verwijderd. Auth-services, Storage, dashboardconfiguratie, Anonymous Auth en productieflags blijven onbewezen. Actieve schijfversleuteling van de back-uplocatie blijft handmatig te bevestigen.
+
+## Voorgesteld volgend pakket: 3A productie-go/no-go en flag-off uitrol
+
+Nog apart goed te keuren omdat dit productiehandelingen omvat. Voer de bestaande productieschema-preflight opnieuw read-only uit, bevestig herstelverantwoordelijke, Anonymous Auth, guestretentie, `COMPR_GUEST_ENABLED=false`, Stripe uit en de toegestane origins. Pas daarna migratie 012 transactioneel toe, verifieer metadata, push/deploy exact de geteste backend met guestflag uit, test de bestaande Chrome-flow en zet de guestflag pas als laatste aan na een afzonderlijk beslismoment.
