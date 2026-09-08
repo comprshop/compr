@@ -9,25 +9,45 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 if ($ValidationOnly -eq $CreateRelease) { throw 'Choose exactly one mode: -ValidationOnly or -CreateRelease.' }
 $allInputs = "$ApiBaseUrl $SupabaseUrl $SupabaseAnonKey $AuthCallbackUrl $ChromeStoreUrl"
 if ($allInputs -match '(?i)(placeholder|replace[_-]?with|example\.(com|org|net)|\.invalid(?:/|\s|$))') {
   throw 'Placeholder configuration is forbidden, including in validation-only mode.'
 }
-if ($SupabaseAnonKey -match '(?i)(service.role|service_role|secret|sk_test|sk_live)' -or $SupabaseAnonKey.Length -lt 20) {
+if ($SupabaseAnonKey -notmatch '^[A-Za-z0-9._-]{20,}$' -or
+    $SupabaseAnonKey -match '(?i)(service.role|service_role|secret|sk_test|sk_live|whsec_)') {
   throw 'The extension build requires a public Supabase anon/publishable key, never a privileged secret.'
 }
-$root = Split-Path -Parent $PSScriptRoot
+
+$root = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $source = Join-Path $root 'V.0.3-prototype'
-$buildRoot = Join-Path $root 'dist'
-$target = Join-Path $buildRoot 'compr-extension'
+$buildRoot = [IO.Path]::GetFullPath((Join-Path $root 'dist'))
+$stage = Join-Path $buildRoot ('.compr-extension-stage-' + [guid]::NewGuid().ToString('N'))
+Import-Module (Join-Path $PSScriptRoot 'extension-production-staging.psm1') -Force
+
+$sourceFiles = @(
+  'manifest.json','popup.html','popup.js','compare.html','compare.js','background.js','content.js',
+  'auth-receiver.html','auth-receiver.js','privacy.md',
+  'icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png',
+  'styles/popup.css','styles/compare.css',
+  'shared/browserAdapter.js','shared/productEligibility.js','shared/popupState.js','shared/product.js',
+  'shared/currency.js','shared/similarity.js','shared/storage.js','shared/i18n.js','shared/auth.js',
+  'shared/apiClient.js','shared/reliability.js',
+  'detectors/price.js','detectors/brand.js','detectors/color.js','detectors/material.js','detectors/sizes.js',
+  'detectors/availability.js','detectors/policies.js','detectors/discountCodes.js','detectors/category.js',
+  'detectors/productId.js','detectors/productName.js',
+  'matching/productMatcher.js','search/searchProvider.js','search/buildSearchQuery.js',
+  'compare/price.js','compare/collection.js','compare/productCard.js'
+)
+$expectedFiles = @($sourceFiles + 'shared/runtimeConfig.js' | Sort-Object -Unique)
 $callbackUri = [uri]$AuthCallbackUrl
 $websiteBaseUrl = ([uri]::new($callbackUri, '.')).AbsoluteUri.TrimEnd('/')
 
 Push-Location (Join-Path $root 'find-cheaper-backend')
 try {
   & npm.cmd test; if ($LASTEXITCODE -ne 0) { throw 'Backend tests failed.' }
-  & npm.cmd audit --omit=dev --offline; if ($LASTEXITCODE -ne 0) { throw 'Local dependency audit failed.' }
+  & npm.cmd audit --omit=dev --offline --audit-level=high; if ($LASTEXITCODE -ne 0) { throw 'High-severity dependency audit failed.' }
 } finally { Pop-Location }
 Push-Location $source
 try {
@@ -37,32 +57,29 @@ try {
 } finally { Pop-Location }
 
 try {
-if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
-New-Item -ItemType Directory -Path $target -Force | Out-Null
+  New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
+  Copy-ExtensionAllowlist -Source $source -Destination $stage -Files $sourceFiles
 
-$files = @(
-  'manifest.json','popup.html','popup.js','compare.html','compare.js','background.js',
-  'auth-receiver.html','auth-receiver.js','privacy.md'
-)
-$directories = @('icons','styles','shared','detectors','matching','compare','search')
-foreach ($file in $files) { Copy-Item -LiteralPath (Join-Path $source $file) -Destination $target }
-foreach ($directory in $directories) { Copy-Item -LiteralPath (Join-Path $source $directory) -Destination $target -Recurse }
+  $providerPath = Join-Path $stage 'search\searchProvider.js'
+  $provider = Get-Content -LiteralPath $providerPath -Raw
+  $oldProviderUrl = 'const BACKEND_SEARCH_URL = "http://127.0.0.1:8787/api/search";'
+  if (([regex]::Matches($provider,[regex]::Escape($oldProviderUrl))).Count -ne 1) { throw 'Unexpected search provider layout.' }
+  $provider = $provider.Replace($oldProviderUrl,'const BACKEND_SEARCH_URL = ComprRuntimeConfig.apiBaseUrl + "/api/search";')
+  $provider = $provider.Replace('local-demo-catalog','backend').Replace('offline-demo','unavailable')
+  $provider = $provider.Replace('ComprDemoCatalog','undefined')
+  $provider = $provider.Replace('COMPR development backend unavailable; using offline demo','COMPR backend unavailable')
+  Set-Content -LiteralPath $providerPath -Value $provider -Encoding utf8
 
-Remove-Item -LiteralPath (Join-Path $target 'search\demoCatalog.js') -Force
-Remove-Item -LiteralPath (Join-Path $target 'matching\matcherTest.js') -Force
-$providerPath = Join-Path $target 'search\searchProvider.js'
-$provider = Get-Content -LiteralPath $providerPath -Raw
-$provider = $provider.Replace('const BACKEND_SEARCH_URL = "http://127.0.0.1:8787/api/search";', 'const BACKEND_SEARCH_URL = ComprRuntimeConfig.apiBaseUrl + "/api/search";')
-$provider = $provider.Replace('local-demo-catalog', 'backend').Replace('offline-demo', 'unavailable')
-$provider = $provider.Replace('ComprDemoCatalog', 'undefined')
-$provider = $provider.Replace('COMPR development backend unavailable; using offline demo', 'COMPR backend unavailable')
-Set-Content -LiteralPath $providerPath -Value $provider -Encoding utf8
-$comparePath = Join-Path $target 'compare.html'
-$compare = Get-Content -LiteralPath $comparePath -Raw
-$compare = $compare -replace '\s*<script src="search/demoCatalog\.js"></script>', ''
-Set-Content -LiteralPath $comparePath -Value $compare -Encoding utf8
+  $comparePath = Join-Path $stage 'compare.html'
+  $compare = (Get-Content -LiteralPath $comparePath -Raw) -replace '\s*<script src="search/demoCatalog\.js"></script>', ''
+  Set-Content -LiteralPath $comparePath -Value $compare -Encoding utf8
+  $popupPath = Join-Path $stage 'popup.html'
+  $popup = Get-Content -LiteralPath $popupPath -Raw
+  $popup = $popup -replace '\s*<script src="shared/safariExperience\.js"></script>', ''
+  $popup = $popup -replace '\s*<script src="safari-popup\.js"></script>', ''
+  Set-Content -LiteralPath $popupPath -Value $popup -Encoding utf8
 
-$runtime = @"
+  $runtime = @"
 // Generated public production configuration. Never add private server secrets here.
 const ComprRuntimeConfig = Object.freeze({
   apiBaseUrl: "$($ApiBaseUrl.TrimEnd('/'))",
@@ -77,74 +94,69 @@ const ComprRuntimeConfig = Object.freeze({
   guestMode: false
 });
 "@
-Set-Content -LiteralPath (Join-Path $target 'shared\runtimeConfig.js') -Value $runtime -Encoding utf8
+  Set-Content -LiteralPath (Join-Path $stage 'shared\runtimeConfig.js') -Value $runtime -Encoding utf8
 
-$manifestPath = Join-Path $target 'manifest.json'
-$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-$version = [string]$manifest.version
-if ($version -notmatch '^\d+(?:\.\d+){1,3}$') { throw 'Manifest version is not a valid Chrome extension version.' }
-$zip = Join-Path $buildRoot "COMPR-v$version-production.zip"
-$manifest.host_permissions = @(
-  "$($ApiBaseUrl.TrimEnd('/'))/*",
-  "$($SupabaseUrl.TrimEnd('/'))/*",
-  'https://www.ecb.europa.eu/*'
-)
-$manifest.web_accessible_resources[0].matches = @((([uri]$AuthCallbackUrl).GetLeftPart('Authority')) + '/*')
-$manifest | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+  $manifestPath = Join-Path $stage 'manifest.json'
+  $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+  $version = [string]$manifest.version
+  if ($version -notmatch '^\d+(?:\.\d+){1,3}$') { throw 'Manifest version is invalid.' }
+  $manifest.host_permissions = @("$($ApiBaseUrl.TrimEnd('/'))/*","$($SupabaseUrl.TrimEnd('/'))/*",'https://www.ecb.europa.eu/*')
+  $manifest.web_accessible_resources[0].matches = @($callbackUri.GetLeftPart('Authority') + '/*')
+  $manifest | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $manifestPath -Encoding utf8
 
-if ($manifest.manifest_version -ne 3) { throw 'Production manifest must use Manifest V3.' }
-if ($manifest.name -ne 'COMPR') { throw 'Production product name must be COMPR.' }
-if ($manifest.content_security_policy.extension_pages -ne "script-src 'self'; object-src 'self'") {
-  throw 'Production extension pages must use the self-only Content Security Policy.'
-}
-if (-not $manifest.permissions -or $manifest.permissions -contains '<all_urls>') { throw 'Production manifest permissions are invalid.' }
-if ($manifest.host_permissions | Where-Object { $_ -match 'localhost|127\.0\.0\.1|^http:' }) {
-  throw 'Production manifest contains a local or insecure host permission.'
-}
-if ($manifest.PSObject.Properties.Name -contains 'externally_connectable') {
-  throw 'Production manifest must not expose unused external messaging.'
-}
-if ($manifest.host_permissions -notcontains 'https://www.ecb.europa.eu/*') {
-  throw 'Production manifest is missing the ECB host required for currency conversion.'
-}
-$webResources = @($manifest.web_accessible_resources | ForEach-Object { $_.resources })
-if ($webResources.Count -ne 1 -or $webResources[0] -ne 'auth-receiver.html') {
-  throw 'Only the login receiver page may be web-accessible.'
-}
-
-$required = @(
-  'manifest.json','popup.html','popup.js','compare.html','compare.js','background.js','auth-receiver.html','auth-receiver.js','privacy.md',
-  'shared\browserAdapter.js','shared\auth.js','shared\apiClient.js','shared\storage.js','shared\reliability.js',
-  'matching\productMatcher.js','search\searchProvider.js','search\buildSearchQuery.js'
-)
-foreach ($requiredFile in $required) {
-  if (-not (Test-Path -LiteralPath (Join-Path $target $requiredFile) -PathType Leaf)) {
-    throw "Required Week 1-3 production file is missing: $requiredFile"
+  if ($manifest.manifest_version -ne 3 -or $manifest.name -ne 'COMPR') { throw 'Chrome manifest identity is invalid.' }
+  if ($manifest.background.service_worker -ne 'background.js' -or
+      $manifest.PSObject.Properties.Name -contains 'content_scripts') { throw 'Chrome entry points are invalid.' }
+  if ($manifest.content_security_policy.extension_pages -ne "script-src 'self'; object-src 'self'") { throw 'Production CSP is invalid.' }
+  if (@($manifest.permissions).Count -ne 3 -or @($manifest.permissions | Where-Object { $_ -notin @('storage','activeTab','scripting') }).Count) {
+    throw 'Production permissions differ from the approved set.'
   }
-}
-$forbiddenNames = Get-ChildItem -LiteralPath $target -Recurse -File | Where-Object {
-  $_.Name -match '(?i)(^\.env|\.test\.js$|test\.js$|readme|audit|checklist)' -or $_.Extension -in @('.zip','.ps1')
-}
-if ($forbiddenNames) { throw "Non-production files entered the build: $($forbiddenNames.FullName -join ', ')" }
+  if ($manifest.host_permissions -contains '<all_urls>' -or @($manifest.host_permissions | Where-Object { $_ -match 'localhost|127\.0\.0\.1|^http:' }).Count) {
+    throw 'Production host permissions are broad, local or insecure.'
+  }
+  if ($manifest.PSObject.Properties.Name -contains 'externally_connectable') { throw 'Unused external messaging is forbidden.' }
+  $webResources = @($manifest.web_accessible_resources | ForEach-Object { $_.resources })
+  if ($webResources.Count -ne 1 -or $webResources[0] -ne 'auth-receiver.html') { throw 'Only the login receiver may be web-accessible.' }
 
-$unsafe = Get-ChildItem -LiteralPath $target -Recurse -File | Select-String -Pattern 'sk_test_|sk_live_|whsec_|service_role|127\.0\.0\.1|localhost|demoCatalog|offline-demo|eval\s*\(|new\s+Function\s*\(' -AllMatches
-if ($unsafe) { $unsafe | ForEach-Object { Write-Error "Unsafe production reference: $($_.Path):$($_.LineNumber)" }; throw 'Production validation failed.' }
+  $popup = Get-Content -LiteralPath $popupPath -Raw
+  if ($popup -match '(?i)(safari-popup\.js|shared/safariExperience\.js)' -or
+      (Test-Path -LiteralPath (Join-Path $stage 'safari-popup.js')) -or
+      (Test-Path -LiteralPath (Join-Path $stage 'shared\safariExperience.js'))) {
+    throw 'Safari-specific runtime files entered the Chrome output.'
+  }
+  foreach ($htmlPath in @($popupPath,$comparePath,(Join-Path $stage 'auth-receiver.html'))) {
+    $html = Get-Content -LiteralPath $htmlPath -Raw
+    $adapterIndex = $html.IndexOf('shared/browserAdapter.js')
+    $dependent = [regex]::Match($html,'<script src="shared/(?!browserAdapter)[^"]+\.js"></script>')
+    if ($adapterIndex -lt 0 -or ($dependent.Success -and $adapterIndex -gt $dependent.Index)) {
+      throw "Browser adapter load order invalid in $htmlPath"
+    }
+  }
 
-$inventory = Get-ChildItem -LiteralPath $target -Recurse -File | ForEach-Object {
-  $_.FullName.Substring($target.Length + 1).Replace('\','/')
-} | Sort-Object
-Write-Host "Future release inventory for COMPR v$version ($($inventory.Count) files):" -ForegroundColor Cyan
-$inventory | ForEach-Object { Write-Host " - $_" }
-
-if ($ValidationOnly) {
-  Write-Host 'Production extension validation-only build passed; no artifact was retained.' -ForegroundColor Green
-} elseif ($CreateRelease) {
-  if (Test-Path -LiteralPath $zip) { throw "Refusing to overwrite existing versioned artifact: $zip" }
-  Compress-Archive -Path (Join-Path $target '*') -DestinationPath $zip -CompressionLevel Optimal
-  Write-Host "Production extension validated: $zip" -ForegroundColor Green
-}
+  $inventory = @(Assert-ExtensionInventory -Root $stage -ExpectedFiles $expectedFiles)
+  Assert-ExtensionOutputSafety -Root $stage
+  foreach ($javascript in Get-ChildItem -LiteralPath $stage -Recurse -File -Filter '*.js') {
+    & node --check $javascript.FullName; if ($LASTEXITCODE -ne 0) { throw "JavaScript syntax failure: $($javascript.Name)" }
+  }
+  Write-Host "Chrome production staging validated ($($inventory.Count) files)." -ForegroundColor Cyan
+  $inventory | ForEach-Object { Write-Host " - $_" }
+  foreach ($relative in $inventory) {
+    $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $stage $relative)).Hash.ToLowerInvariant()
+    Write-Host " SHA256 $relative $hash"
+  }
+  if ($ValidationOnly) {
+    Write-Host 'Validation-only build passed; no artifact was retained.' -ForegroundColor Green
+  } else {
+    $zip = Join-Path $buildRoot "COMPR-v$version-production.zip"
+    if (Test-Path -LiteralPath $zip) { throw "Refusing to overwrite existing versioned artifact: $zip" }
+    Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal
+    Write-Host "Production extension validated: $zip" -ForegroundColor Green
+  }
 } finally {
-  if ((Test-Path -LiteralPath $target) -and $target.StartsWith($buildRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-    Remove-Item -LiteralPath $target -Recurse -Force
+  if (Test-Path -LiteralPath $stage) {
+    $resolvedStage = [IO.Path]::GetFullPath($stage)
+    $prefix = $buildRoot.TrimEnd('\') + '\'
+    if (-not $resolvedStage.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe staging cleanup target.' }
+    Remove-Item -LiteralPath $resolvedStage -Recurse -Force
   }
 }

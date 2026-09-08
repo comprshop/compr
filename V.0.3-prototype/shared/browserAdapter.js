@@ -48,7 +48,7 @@
   }
   function safeHttpUrl(value) {
     let parsed; try { parsed = new URL(value); } catch { throw unavailable("safe-url"); }
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw unavailable("safe-url");
+    if (parsed.protocol !== "https:") throw unavailable("safe-url");
     return parsed.href;
   }
   const storageLocal = Object.freeze({

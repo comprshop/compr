@@ -66,6 +66,8 @@ test("missing APIs and unsafe URL schemes fail closed with normalised errors", a
   const adapter = load({ chrome: { runtime: { id: "id", onInstalled: event(), onStartup: event(), onMessage: event(), getURL: value => value } } });
   await assert.rejects(adapter.tabs.query({}), error => error.code === "EXTENSION_API_UNAVAILABLE");
   await assert.rejects(adapter.tabs.openExternal("javascript:alert(1)"), error => error.code === "EXTENSION_API_UNAVAILABLE");
+  await assert.rejects(adapter.tabs.openExternal("http://shop.example/product"), error => error.code === "EXTENSION_API_UNAVAILABLE");
+  await assert.rejects(adapter.tabs.openExternal("http://localhost:8787/product"), error => error.code === "EXTENSION_API_UNAVAILABLE");
 });
 
 test("permission grant and denial are returned without duplicate requests", async () => {

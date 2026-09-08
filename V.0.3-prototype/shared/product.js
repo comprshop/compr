@@ -37,7 +37,7 @@
     if (!value) return "";
     try {
       const url = new URL(String(value).trim());
-      return ["http:", "https:"].includes(url.protocol) ? url.toString() : "";
+      return url.protocol === "https:" ? url.toString() : "";
     } catch {
       return "";
     }
