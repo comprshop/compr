@@ -58,4 +58,3 @@ Age rating is expected to be suitable for a general shopping utility, but the Ac
 - [TestFlight overview](https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview)
 - [Screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications)
 - [Upcoming requirements](https://developer.apple.com/news/upcoming-requirements/): Apple states that since 2026-04-28 App Store Connect uploads must use Xcode 26 or later with the applicable version-26 SDK. Recheck immediately before upload.
-
