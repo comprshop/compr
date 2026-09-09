@@ -2,6 +2,27 @@
 
 This is an operator checklist, not authorization. Record no credentials, tokens, complete sensitive URLs, personal data or database contents. Replace placeholders only in the relevant trusted UI/session. Any failed stop condition means stop with flags off and preserve evidence.
 
+## Local release-input snapshot — 2026-09-09
+
+Status legend: **LOCAL DONE** = locally demonstrated; **MANUAL** = operator action still required; **PRODUCTION-SENSITIVE** = separate approved production window; **MAC/XCODE** = requires an approved Mac/Xcode environment; **BLOCKED** = cannot proceed yet; **SEPARATE APPROVAL** = this checklist is not authorization.
+
+| Area | Status | Evidence / next action |
+|---|---|---|
+| Chrome source and staging gate | LOCAL DONE | Client commit `f614a2fbad2e912401c48a8a6b82db924ba00727`; two 45-file builds matched; content-manifest SHA-256 `5dbe1275ae08676e7b1c40046dcd38121fc4983b9cae37cc8ced44d372005421` |
+| Chrome release ZIP | LOCAL DONE, MANUAL, SEPARATE APPROVAL | `dist/COMPR-v0.3.0-production.zip`; SHA-256 `cf026a39b497b13b88e3a83323cc45919eb87b0f8d8bc9958535cda74fba6996`; independently extracted and revalidated; upload is not authorized by this runbook |
+| Chrome Web Store rollout | MANUAL, PRODUCTION-SENSITIVE, SEPARATE APPROVAL | Verify version/release notes, use limited/test publication when available, run login/logout/session/callback/matching/error/quota/update-path smoke; retain the old callback until migrated users are proven |
+| Supabase redirects | MANUAL, PRODUCTION-SENSITIVE, SEPARATE APPROVAL | Site URL `https://getcompr.nl`; add exact `https://getcompr.nl/auth-callback.html`; retain the old exact callback temporarily; no wildcard; run preflight before any migration |
+| Migrations 012/013 | BLOCKED, PRODUCTION-SENSITIVE, SEPARATE APPROVAL | Run only in a separately approved window after fresh verified backup; do not enable Anonymous Auth or guest flag early |
+| Backend/Render | MANUAL, PRODUCTION-SENSITIVE, SEPARATE APPROVAL | Verify exact deployed commit, backup, CORS, normal Chrome regression; keep guest and Stripe flags off initially |
+| Safari converter input | LOCAL DONE, MAC/XCODE | `build/safari-converter-input`; two 48-file builds matched; content-manifest SHA-256 `a7cfdcd3c5adaaf56cc363b526496c79e4ecd7253a60996edb2a35bd126493d3` |
+| Safari conversion | BLOCKED, MAC/XCODE, SEPARATE APPROVAL | On the approved Mac, first run `xcrun safari-web-extension-converter --help`; then run `xcrun safari-web-extension-converter /path/to/safari-converter-input --project-location /path/to/COMPR-Safari` and review every warning before setting identifiers or signing |
+| Apple identifiers/signing/device tests | BLOCKED, MAC/XCODE, SEPARATE APPROVAL | Deliberately choose bundle IDs, App Groups and entitlements; test physical macOS/Safari and iPhone/iPad; no private signing material in notes or Git |
+| TestFlight/App Store | BLOCKED, MANUAL, PRODUCTION-SENSITIVE, SEPARATE APPROVAL | Complete privacy labels, truthful metadata, real-device screenshots, internal TestFlight, guest/account conversion tests, then separately authorize submission |
+| Guest activation | BLOCKED, PRODUCTION-SENSITIVE, SEPARATE APPROVAL | Migrations/postchecks/normal regression/CAPTCHA-abuse decision first; Anonymous Auth before flag-off test; guest flag last; rehearse kill switch |
+| Paid users | BLOCKED, PRODUCTION-SENSITIVE, SEPARATE APPROVAL | Stripe and StoreKit remain unclaimed/off; separately approve configuration and sandbox end-to-end tests before any paid-user launch |
+
+Before uploading or transferring an artifact, recalculate its SHA-256 and compare it with this snapshot. A mismatch is a stop condition. Generated artifacts and signing material must remain outside Git.
+
 ## 1. Before production
 
 | Step | Operator / system | Prerequisite | Evidence | Stop condition | Safe recovery |
