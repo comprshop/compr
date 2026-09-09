@@ -24,6 +24,7 @@ test("Safari manifest is minimal MV3 and never requests permanent all-site acces
   assert.deepEqual(safariManifest.permissions.sort(), ["activeTab", "scripting", "storage"]);
   assert.equal(safariManifest.host_permissions.includes("<all_urls>"), false);
   assert.equal(safariManifest.host_permissions.some(value => /localhost|127\.0\.0\.1|^http:/.test(value)), false);
+  assert.deepEqual(safariManifest.web_accessible_resources[0].matches, ["https://getcompr.nl/*"]);
   assert.equal(safariManifest.background.service_worker, "background.js");
 });
 
@@ -99,5 +100,6 @@ test("build exposes exclusive validation and staging modes and rejects unsafe in
   assert.match(build, /\.env/);
   assert.match(build, /service_role/);
   assert.match(build, /localhost/);
+  assert.match(build, /Auth callback must be exactly https:\/\/getcompr\.nl\/auth-callback\.html/);
   assert.doesNotMatch(build, /Compress-Archive|App Store Connect|TestFlight|xcrun/);
 });

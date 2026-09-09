@@ -10,7 +10,7 @@
   ],
   "web_accessible_resources": [{
     "resources": ["auth-receiver.html"],
-    "matches": ["https://comprshop.github.io/*"]
+    "matches": ["https://getcompr.nl/*"]
   }],
   "icons": {
     "16": "icons/icon16.png",

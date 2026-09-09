@@ -4,7 +4,7 @@ Last updated: 2 September 2026
 
 The complete public policy is available at:
 
-https://comprshop.github.io/compr-website/privacy.html
+https://getcompr.nl/privacy.html
 
 COMPR reads publicly visible product information from the active page after the user opens the extension. This can include product name, brand, price, currency, image URL, variant details, identifiers, availability, retailer domain, page URL and visible promotions. It uses this information to show the detected product and, when the user chooses, save and compare it locally.
 

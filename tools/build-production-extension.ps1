@@ -42,6 +42,10 @@ $sourceFiles = @(
 )
 $expectedFiles = @($sourceFiles + 'shared/runtimeConfig.js' | Sort-Object -Unique)
 $callbackUri = [uri]$AuthCallbackUrl
+if ($callbackUri.Scheme -ne 'https' -or $callbackUri.Host -ne 'getcompr.nl' -or
+    $callbackUri.AbsolutePath -ne '/auth-callback.html' -or $callbackUri.Query -or $callbackUri.Fragment) {
+  throw 'Auth callback must be exactly https://getcompr.nl/auth-callback.html.'
+}
 $websiteBaseUrl = ([uri]::new($callbackUri, '.')).AbsoluteUri.TrimEnd('/')
 
 Push-Location (Join-Path $root 'find-cheaper-backend')
@@ -135,6 +139,9 @@ const ComprRuntimeConfig = Object.freeze({
 
   $inventory = @(Assert-ExtensionInventory -Root $stage -ExpectedFiles $expectedFiles)
   Assert-ExtensionOutputSafety -Root $stage
+  $obsoleteUrls = @(Get-ChildItem -LiteralPath $stage -Recurse -File |
+    Select-String -Pattern 'comprshop\.github\.io|vercel\.app' -AllMatches)
+  if ($obsoleteUrls.Count) { throw 'Obsolete website origin entered the Chrome output.' }
   foreach ($javascript in Get-ChildItem -LiteralPath $stage -Recurse -File -Filter '*.js') {
     & node --check $javascript.FullName; if ($LASTEXITCODE -ne 0) { throw "JavaScript syntax failure: $($javascript.Name)" }
   }
