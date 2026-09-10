@@ -41,6 +41,16 @@ function Assert-ExtensionOutputSafety([string]$Root) {
   )
   $unsafe = @(Get-ChildItem -LiteralPath $Root -Recurse -File | Select-String -Pattern $patterns -AllMatches)
   if ($unsafe.Count) { throw "Unsafe production output content detected in $($unsafe.Count) location(s)." }
+
+  $mojibake = @(
+    ([char]0x00e2).ToString() + [char]0x20ac,
+    ([char]0x00c3).ToString(),
+    ([char]0xfffd).ToString()
+  )
+  $brokenText = @(Get-ChildItem -LiteralPath $Root -Recurse -File |
+    Where-Object { $_.Extension -in @('.html','.js','.css','.json','.md') } |
+    Select-String -SimpleMatch -Pattern $mojibake)
+  if ($brokenText.Count) { throw "Mojibake detected in production output at $($brokenText.Count) location(s)." }
 }
 
 Export-ModuleMember -Function Get-RelativeInventory,Copy-ExtensionAllowlist,Assert-ExtensionInventory,Assert-ExtensionOutputSafety

@@ -65,7 +65,7 @@ try {
   Copy-ExtensionAllowlist -Source $source -Destination $stage -Files $sourceFiles
 
   $providerPath = Join-Path $stage 'search\searchProvider.js'
-  $provider = Get-Content -LiteralPath $providerPath -Raw
+  $provider = Get-Content -LiteralPath $providerPath -Raw -Encoding utf8
   $oldProviderUrl = 'const BACKEND_SEARCH_URL = "http://127.0.0.1:8787/api/search";'
   if (([regex]::Matches($provider,[regex]::Escape($oldProviderUrl))).Count -ne 1) { throw 'Unexpected search provider layout.' }
   $provider = $provider.Replace($oldProviderUrl,'const BACKEND_SEARCH_URL = ComprRuntimeConfig.apiBaseUrl + "/api/search";')
@@ -75,10 +75,10 @@ try {
   Set-Content -LiteralPath $providerPath -Value $provider -Encoding utf8
 
   $comparePath = Join-Path $stage 'compare.html'
-  $compare = (Get-Content -LiteralPath $comparePath -Raw) -replace '\s*<script src="search/demoCatalog\.js"></script>', ''
+  $compare = (Get-Content -LiteralPath $comparePath -Raw -Encoding utf8) -replace '\s*<script src="search/demoCatalog\.js"></script>', ''
   Set-Content -LiteralPath $comparePath -Value $compare -Encoding utf8
   $popupPath = Join-Path $stage 'popup.html'
-  $popup = Get-Content -LiteralPath $popupPath -Raw
+  $popup = Get-Content -LiteralPath $popupPath -Raw -Encoding utf8
   $popup = $popup -replace '\s*<script src="shared/safariExperience\.js"></script>', ''
   $popup = $popup -replace '\s*<script src="safari-popup\.js"></script>', ''
   Set-Content -LiteralPath $popupPath -Value $popup -Encoding utf8
@@ -101,7 +101,7 @@ const ComprRuntimeConfig = Object.freeze({
   Set-Content -LiteralPath (Join-Path $stage 'shared\runtimeConfig.js') -Value $runtime -Encoding utf8
 
   $manifestPath = Join-Path $stage 'manifest.json'
-  $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+  $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding utf8 | ConvertFrom-Json
   $version = [string]$manifest.version
   if ($version -notmatch '^\d+(?:\.\d+){1,3}$') { throw 'Manifest version is invalid.' }
   $manifest.host_permissions = @("$($ApiBaseUrl.TrimEnd('/'))/*","$($SupabaseUrl.TrimEnd('/'))/*",'https://www.ecb.europa.eu/*')
@@ -122,14 +122,14 @@ const ComprRuntimeConfig = Object.freeze({
   $webResources = @($manifest.web_accessible_resources | ForEach-Object { $_.resources })
   if ($webResources.Count -ne 1 -or $webResources[0] -ne 'auth-receiver.html') { throw 'Only the login receiver may be web-accessible.' }
 
-  $popup = Get-Content -LiteralPath $popupPath -Raw
+  $popup = Get-Content -LiteralPath $popupPath -Raw -Encoding utf8
   if ($popup -match '(?i)(safari-popup\.js|shared/safariExperience\.js)' -or
       (Test-Path -LiteralPath (Join-Path $stage 'safari-popup.js')) -or
       (Test-Path -LiteralPath (Join-Path $stage 'shared\safariExperience.js'))) {
     throw 'Safari-specific runtime files entered the Chrome output.'
   }
   foreach ($htmlPath in @($popupPath,$comparePath,(Join-Path $stage 'auth-receiver.html'))) {
-    $html = Get-Content -LiteralPath $htmlPath -Raw
+    $html = Get-Content -LiteralPath $htmlPath -Raw -Encoding utf8
     $adapterIndex = $html.IndexOf('shared/browserAdapter.js')
     $dependent = [regex]::Match($html,'<script src="shared/(?!browserAdapter)[^"]+\.js"></script>')
     if ($adapterIndex -lt 0 -or ($dependent.Success -and $adapterIndex -gt $dependent.Index)) {
@@ -157,7 +157,20 @@ const ComprRuntimeConfig = Object.freeze({
     $zip = Join-Path $buildRoot "COMPR-v$version-production.zip"
     if (Test-Path -LiteralPath $zip) { throw "Refusing to overwrite existing versioned artifact: $zip" }
     Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal
+    $manualSmoke = [IO.Path]::GetFullPath((Join-Path $root 'build\chrome-manual-smoke'))
+    $manualRoot = [IO.Path]::GetFullPath((Join-Path $root 'build')).TrimEnd('\') + '\'
+    if (-not $manualSmoke.StartsWith($manualRoot,[StringComparison]::OrdinalIgnoreCase)) { throw 'Unsafe manual smoke path.' }
+    if (Test-Path -LiteralPath $manualSmoke) { Remove-Item -LiteralPath $manualSmoke -Recurse -Force }
+    Copy-ExtensionAllowlist -Source $stage -Destination $manualSmoke -Files $expectedFiles
+    $manualInventory = @(Assert-ExtensionInventory -Root $manualSmoke -ExpectedFiles $expectedFiles)
+    Assert-ExtensionOutputSafety -Root $manualSmoke
+    foreach ($relative in $inventory) {
+      $stagedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $stage $relative)).Hash
+      $manualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $manualSmoke $relative)).Hash
+      if ($stagedHash -ne $manualHash) { throw "Manual smoke mismatch: $relative" }
+    }
     Write-Host "Production extension validated: $zip" -ForegroundColor Green
+    Write-Host "Manual smoke directory refreshed ($($manualInventory.Count) files): $manualSmoke" -ForegroundColor Green
   }
 } finally {
   if (Test-Path -LiteralPath $stage) {

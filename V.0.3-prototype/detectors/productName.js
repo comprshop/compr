@@ -13,7 +13,7 @@ function chooseBestProductName(candidates) {
   const uuid = /^(?:urn:uuid:)?[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const cleaned = [...new Set((candidates || []).map(cleanProductName).filter(name =>
     name.length >= 3 && name.length <= 240 && !uuid.test(name) &&
-    !/\s[-|â€“â€”–—]\s*(?:bing|google|search|zoeken)\s*$/i.test(name)
+    !/\s[-|\u2013\u2014]\s*(?:bing|google|search|zoeken)\s*$/i.test(name)
   ))];
   if (!cleaned.length) return "Productnaam niet gevonden";
   const visible = cleaned[0];
