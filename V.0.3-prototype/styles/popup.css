@@ -1196,6 +1196,76 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .safari-plan-options strong { font-size:12px; }.safari-plan-options small { margin-top:3px; color:var(--compr-text-2); font-size:10px; }
 .safari-plan-options em { margin-left:5px; padding:3px 5px; border-radius:999px; background:#dfdcff; color:#4538c8; font-size:8px; font-style:normal; }
 .safari-sheet-secondary { width:100%; min-height:44px; margin-top:7px; border:0; background:transparent; color:var(--compr-text-2); font:inherit; font-weight:750; cursor:pointer; }
+
+/* Human product refinement: compact hierarchy, restrained surfaces and one action accent. */
+:root {
+  --compr-bg:#f4f4f6;
+  --compr-surface:#fff;
+  --compr-surface-muted:#f7f7f9;
+  --compr-border:#dedee5;
+  --compr-text:#202027;
+  --compr-text-2:#5f5f69;
+  --compr-muted:#767680;
+  --compr-purple:#5947d6;
+  --compr-purple-hover:#4939bd;
+  --compr-purple-soft:#f0eefb;
+  --compr-success:#087553;
+  --compr-warning:#8a5a00;
+  --compr-danger:#a52a35;
+  --compr-focus:#7869e8;
+  --compr-space-sm:6px;
+  --compr-space-md:12px;
+  --compr-space-lg:18px;
+  --compr-radius-sm:6px;
+  --compr-radius-md:10px;
+  --compr-radius-lg:14px;
+  --compr-shadow-low:0 1px 2px rgba(20,20,30,.06);
+  --compr-shadow-high:0 12px 32px rgba(20,20,30,.14);
+  --compr-control-compact:36px;
+  --compr-control-normal:44px;
+}
+.app { padding-top:12px; background:var(--compr-bg); }
+.header { margin-top:-12px; padding-top:10px; padding-bottom:10px; background:rgba(244,244,246,.97); backdrop-filter:none; }
+.brand-logo { width:34px; height:34px; border-radius:var(--compr-radius-md); }
+.brand h1 { font-size:17px; }
+.brand p { margin-top:1px; font-size:10px; }
+.saved-count-button,.country-select,.language-select,.country-picker-input { min-height:var(--compr-control-compact); border-radius:var(--compr-radius-sm); }
+.account-card { margin-top:10px; padding:11px 12px; overflow:visible; border-radius:var(--compr-radius-md); background:var(--compr-surface); box-shadow:var(--compr-shadow-low); }
+.account-card::after { display:none; }
+.account-plan-icon { border-radius:var(--compr-radius-sm); }
+.account-eyebrow { color:var(--compr-muted); font-size:9px; font-weight:700; letter-spacing:0; text-transform:none; }
+.account-summary strong { white-space:normal; overflow-wrap:anywhere; font-size:13px; }
+.account-badge,.detected-badge { border-radius:var(--compr-radius-sm); letter-spacing:0; text-transform:none; }
+.usage-track span { background:var(--compr-purple); }
+.upgrade-button,.manage-billing,.account-sign-in input,.account-sign-in button,.account-sign-out,.account-delete { min-height:var(--compr-control-normal); border-radius:var(--compr-radius-sm); }
+.product-state { gap:10px; }
+.product-card { padding:12px; gap:12px; border-radius:var(--compr-radius-md); box-shadow:var(--compr-shadow-low); }
+.product-image-wrapper { border-radius:var(--compr-radius-sm); }
+.product-brand,.product-category { letter-spacing:.2px; text-transform:none; }
+.product-name { margin-bottom:8px; }
+.cheaper-card { padding:14px; border-color:var(--compr-border); border-radius:var(--compr-radius-md); box-shadow:none; }
+.cheaper-card .coming-soon { color:var(--compr-muted); font-weight:700; letter-spacing:0; text-transform:none; }
+.cheaper-card h3 { font-size:17px; }
+.cheaper-card .search-icon { background:transparent; }
+.find-cheaper-primary { min-height:var(--compr-control-normal); border-radius:var(--compr-radius-sm); box-shadow:none; letter-spacing:0; }
+.find-cheaper-primary:hover { box-shadow:none; transform:none; }
+#saveButton.primary-button { border-radius:var(--compr-radius-sm); }
+#compareButton.compare-link { border-radius:var(--compr-radius-md); box-shadow:0 6px 18px rgba(20,20,30,.16); }
+.empty-state { padding:24px 16px; border-radius:var(--compr-radius-md); box-shadow:none; }
+.empty-state .steps { margin:14px 0; gap:0; }
+.empty-state .step { padding:9px 0; border:0; border-top:1px solid var(--compr-border); border-radius:0; background:transparent; }
+.empty-state .step:last-child { border-bottom:1px solid var(--compr-border); }
+.empty-state .step span { background:var(--compr-purple-soft); color:var(--compr-purple); }
+.safari-panel { padding:16px; border-radius:var(--compr-radius-lg); box-shadow:var(--compr-shadow-low); }
+.safari-panel>h1 { font-size:20px; }
+.safari-product,.safari-savings,.safari-disclosure { border-radius:var(--compr-radius-md); }
+.safari-primary,.safari-explain-button,.safari-actions button,.safari-disclosure button { min-height:var(--compr-control-normal); border-radius:var(--compr-radius-sm); }
+.safari-primary { box-shadow:none; }
+.safari-trust span { border-radius:var(--compr-radius-sm); }
+.safari-sheet-card { border-radius:var(--compr-radius-lg); box-shadow:var(--compr-shadow-high); }
+.safari-plan-options label { border-radius:var(--compr-radius-md); }
+.safari-plan-options em { border-radius:var(--compr-radius-sm); }
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible { outline:3px solid var(--compr-focus); outline-offset:2px; }
 .sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
 @media (prefers-contrast: more) { .safari-panel,.safari-product,.safari-actions button,.safari-disclosure { border-color:currentColor; } }
 @media (prefers-reduced-motion: reduce) { .safari-loader { animation:none; border-top-color:var(--compr-purple); } }
