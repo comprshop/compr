@@ -1094,10 +1094,17 @@ button, a, select { transition-duration: 180ms; }
 button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid rgba(102,87,245,.32); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
 
-/* Safari extension panels can be narrower than desktop Chromium popups. */
+/* Chrome initially measures action popups in a very narrow provisional viewport.
+   Never let that measurement collapse the requested 380px popup width. A real
+   320-379px test viewport and Safari's explicitly marked panel may still adapt. */
+@media (min-width: 320px) and (max-width: 379px) {
+  html.chrome-popup { width: 100%; min-width: 0; max-width: 100%; }
+  html.chrome-popup body { width: 100%; min-width: 0; max-width: 100%; }
+}
+
 @media (max-width: 379px) {
-  html { width: 100%; min-width: 0; max-width: 100%; }
-  body { width: 100%; min-width: 0; max-width: 100%; }
+  html.safari-popup { width: 100%; min-width: 0; max-width: 100%; }
+  html.safari-popup body { width: 100%; min-width: 0; max-width: 100%; }
   .app {
     width: 100%;
     min-width: 0;

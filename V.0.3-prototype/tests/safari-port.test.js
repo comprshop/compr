@@ -16,6 +16,7 @@ const backgroundJs = fs.readFileSync(path.join(source, "background.js"), "utf8")
 const popupCss = fs.readFileSync(path.join(source, "styles", "popup.css"), "utf8");
 const compareCss = fs.readFileSync(path.join(source, "styles", "compare.css"), "utf8");
 const popupJs = fs.readFileSync(path.join(source, "popup.js"), "utf8");
+const safariPopupJs = fs.readFileSync(path.join(source, "safari-popup.js"), "utf8");
 const authJs = fs.readFileSync(path.join(source, "shared", "auth.js"), "utf8");
 const runtimeConfig = fs.readFileSync(path.join(source, "shared", "runtimeConfig.js"), "utf8");
 
@@ -53,6 +54,8 @@ test("browser adapter and eligibility load before injected content code in Chrom
 
 test("mobile layouts include narrow viewport, safe areas, touch targets and long-name wrapping", () => {
   assert.match(popupHtml, /width=device-width/);
+  assert.match(popupHtml, /class="chrome-popup"/);
+  assert.match(safariPopupJs, /classList\.remove\("chrome-popup"\)[\s\S]*classList\.add\("safari-popup"\)/);
   assert.match(compareHtml, /width=device-width/);
   for (const css of [popupCss, compareCss]) {
     assert.match(css, /max-width:\s*(?:379|420)px/);

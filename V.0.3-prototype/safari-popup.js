@@ -5,6 +5,8 @@
   async function start() {
     if (started) return false;
     started = true;
+    document.documentElement.classList.remove("chrome-popup");
+    document.documentElement.classList.add("safari-popup");
     const ui = Object.fromEntries(["Experience","Panel","Live","Loader","Eyebrow","Title","Copy","Product","Image","ProductName","Store","CurrentPrice","Savings","Saving","OldTotal","DealTotal","CurrentRetailer","DealRetailer","Shipping","Trust","Primary","Privacy","UsageNote","Actions","Save","CouponsToggle","DetailsToggle","Coupons","Details","ProSheet","TryPro","NotNow","PlanMonthly","PlanYearly"]
       .map(name => [name[0].toLowerCase() + name.slice(1), document.getElementById(`safari${name}`)]));
     document.querySelectorAll(".app > :not(#safariExperience):not(#toast):not(#comparePrompt)").forEach(node => node.classList.add("safari-hidden"));

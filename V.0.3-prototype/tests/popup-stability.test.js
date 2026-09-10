@@ -64,11 +64,15 @@ test("popup bootstrap, i18n listener and observer initialise once and clean up",
 });
 
 test("popup keeps a stable 380 CSS-pixel viewport without horizontal overflow", () => {
+  assert.match(html, /<html lang="en" class="chrome-popup">/);
   assert.match(css, /html \{ width: 380px; min-width: 380px; max-width: 380px;/);
   assert.match(css, /scrollbar-gutter:\s*stable/);
   assert.match(css, /overflow-x:\s*hidden/);
   assert.match(css, /\.app \{ width: 100%; min-width: 0; max-width: 100%/);
-  assert.match(css, /@media \(max-width: 379px\)/);
+  assert.match(css, /@media \(min-width: 320px\) and \(max-width: 379px\)/);
+  assert.match(css, /html\.chrome-popup \{ width: 100%; min-width: 0; max-width: 100%; \}/);
+  assert.doesNotMatch(css, /@media \(max-width: 379px\)\s*\{\s*html \{/);
+  assert.match(css, /html\.safari-popup \{ width: 100%; min-width: 0; max-width: 100%; \}/);
   assert.doesNotMatch(css, /transition\s*:\s*width/);
   for (const zoom of [1, 2]) {
     const viewportDevicePixels = 380 * zoom;
