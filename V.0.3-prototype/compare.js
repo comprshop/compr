@@ -28,6 +28,7 @@ const elements = {
   cheaperWebSearch: document.getElementById("cheaperWebSearch"),
   cheaperBroadSearch: document.getElementById("cheaperBroadSearch"),
   cheaperStatus: document.getElementById("cheaperStatus"),
+  cheaperSignIn: document.getElementById("cheaperSignIn"),
   cheaperResults: document.getElementById("cheaperResults")
 };
 
@@ -422,9 +423,10 @@ function renderCheaperCurrentProduct(product) {
   const title = document.createElement("strong");
   title.textContent = product.name || "Product name unavailable";
   const meta = document.createElement("p");
-  const identifier = product.gtin || product.mpn || product.productCode || product.sku;
-  meta.textContent = identifier
-    ? `Identifier: ${identifier}`
+  const identifier = product.gtin || product.mpn || product.sku;
+  const identifierLabel = product.gtin ? "GTIN" : product.mpn ? "MPN" : product.sku ? "Retailer product code" : "";
+  meta.textContent = identifier && identifierLabel
+    ? `${identifierLabel}: ${identifier}`
     : "No identifier detected — matching will be less certain.";
   copy.append(eyebrow, title, meta);
 
@@ -570,6 +572,7 @@ async function handleFindCheaper(product) {
   elements.cheaperDialogSubtitle.textContent = "Building a safe product fingerprint…";
   elements.cheaperStatus.textContent = "Searching public retailer pages…";
   elements.cheaperResults.replaceChildren();
+  elements.cheaperSignIn.classList.add("hidden");
   for (let index = 0; index < 2; index += 1) {
     const skeleton = document.createElement("div");
     skeleton.className = "result-skeleton";
@@ -661,6 +664,8 @@ async function handleFindCheaper(product) {
     const friendly = friendlyErrors[code] || ["We couldn't complete the search", "Please try again in a moment."];
     elements.cheaperDialogSubtitle.textContent = friendly[0];
     elements.cheaperStatus.textContent = friendly[1];
+    elements.cheaperSignIn.classList.toggle("hidden", code !== "AUTH_REQUIRED");
+    if (code === "AUTH_REQUIRED") elements.cheaperSignIn.focus();
     if (["NO_CONFIDENT_MATCH", "NO_RESULTS_FROM_PROVIDER", "INSUFFICIENT_PRODUCT_DATA", "PRICE_NOT_COMPARABLE", "SEARCH_PROVIDER_ERROR", "SEARCH_TIMEOUT"].includes(code)) {
       const retry = document.createElement("button");
       retry.type = "button";
@@ -772,6 +777,15 @@ async function importProducts(file) {
 
 elements.clearButton.addEventListener("click", handleClearAll);
 elements.cheaperDialogClose.addEventListener("click", closeCheaperDialog);
+elements.cheaperSignIn.addEventListener("click", async () => {
+  try {
+    await ComprBrowser.tabs.create({ url: ComprBrowser.runtime.getURL("popup.html") });
+    closeCheaperDialog();
+  } catch {
+    showToast("Sign-in page couldn't be opened. Try again.");
+    elements.cheaperSignIn.focus();
+  }
+});
 elements.cheaperDialog.addEventListener("click", event => {
   if (event.target === elements.cheaperDialog) closeCheaperDialog();
 });

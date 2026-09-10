@@ -21,17 +21,26 @@ function cleanProductId(value) {
   return cleaned;
 }
 
+function isValidGtin(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (![8, 12, 13, 14].includes(digits.length)) return false;
+  const sum = [...digits.slice(0, -1)].reverse().reduce((total, digit, index) =>
+    total + Number(digit) * (index % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === Number(digits.at(-1));
+}
+
 function getProductId(jsonProduct) {
   // 1. Betrouwbare structured data eerst
   const sku = cleanProductId(jsonProduct?.sku);
   const mpn = cleanProductId(jsonProduct?.mpn);
 
-  const gtin =
+  const gtinCandidate =
     cleanProductId(jsonProduct?.gtin) ||
     cleanProductId(jsonProduct?.gtin8) ||
     cleanProductId(jsonProduct?.gtin12) ||
     cleanProductId(jsonProduct?.gtin13) ||
     cleanProductId(jsonProduct?.gtin14);
+  const gtin = isValidGtin(gtinCandidate) ? String(gtinCandidate).replace(/\D/g, "") : null;
 
   // 2. Zoek naar zichtbare style/product codes
   const bodyText = document.body?.innerText || "";
@@ -72,16 +81,13 @@ function getProductId(jsonProduct) {
     mpn: mpn || null,
     gtin: gtin || null,
 
-    productCode:
-      sku ||
-      mpn ||
-      gtin ||
-      visibleCode ||
-      pathCode ||
-      null
+    productCode: null,
+    retailerSku: sku || visibleCode || null,
+    unknownCode: !sku && !mpn && !gtin ? pathCode : null,
+    identifierType: gtin ? "gtin" : mpn ? "mpn" : (sku || visibleCode) ? "retailer_sku" : null
   };
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { cleanProductId };
+  module.exports = { cleanProductId, isValidGtin, getProductId };
 }

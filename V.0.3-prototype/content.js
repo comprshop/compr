@@ -35,13 +35,13 @@ async function getProductInfo() {
   const visibleName =
     document.querySelector("h1")?.innerText?.trim() || "";
 
-  const name = chooseBestProductName([
+  const { name, rawTitle } = chooseBestProductTitle([
     jsonProduct?.name,
     visibleName,
     document.querySelector('meta[property="og:title"]')?.content,
     document.querySelector('meta[name="twitter:title"]')?.content,
     document.title
-  ]);
+  ], window.location.hostname);
 
   const image =
     getImageFromJsonLd(jsonProduct) ||
@@ -75,6 +75,7 @@ async function getProductInfo() {
   const productInfo = {
     isProductPage: true,
     name,
+    rawTitle,
 
     brand:
       getBrand(jsonProduct, name) ||
@@ -134,6 +135,9 @@ async function getProductInfo() {
 
     productCode:
       identifiers?.productCode || null,
+
+    identifierType:
+      identifiers?.identifierType || null,
 
     url:
       window.location.href,

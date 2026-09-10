@@ -47,10 +47,8 @@
     if (!product) return "";
 
     const identifier = [
-      product.productCode,
-      product.sku,
-      product.mpn,
-      product.gtin
+      product.gtin,
+      product.mpn
     ]
       .map(normalizeCode)
       .find(Boolean);
@@ -65,10 +63,8 @@
     if (!product) return [];
 
     return [
-      product.productCode,
-      product.sku,
-      product.mpn,
-      product.gtin
+      product.gtin,
+      product.mpn
     ]
       .map(normalizeCode)
       .filter(Boolean);

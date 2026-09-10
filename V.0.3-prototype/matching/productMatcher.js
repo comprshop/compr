@@ -72,8 +72,16 @@
     return sameValue(productA?.[field], productB?.[field], normalizeCode);
   }
 
+  function isValidGtin(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+    if (![8, 12, 13, 14].includes(digits.length)) return false;
+    const sum = [...digits.slice(0, -1)].reverse().reduce((total, digit, index) =>
+      total + Number(digit) * (index % 2 === 0 ? 3 : 1), 0);
+    return (10 - (sum % 10)) % 10 === Number(digits.at(-1));
+  }
+
   function getCodes(product) {
-    return [product?.gtin, product?.mpn, product?.productCode, product?.sku]
+    return [product?.gtin, product?.mpn]
       .map(normalizeCode)
       .filter(Boolean);
   }
@@ -85,16 +93,15 @@
   }
 
   function sameStrongIdentifier(productA, productB) {
-    const fields = ["gtin", "mpn", "productCode"];
+    const fields = ["gtin", "mpn"];
     const codesA = fields.map(field => normalizeCode(productA?.[field])).filter(Boolean);
     const codesB = fields.map(field => normalizeCode(productB?.[field])).filter(Boolean);
     return codesA.some(code => code.length >= 5 && codesB.includes(code));
   }
 
   function getExactIdentifierReason(productA, productB) {
-    if (fieldMatches(productA, productB, "gtin")) return "Same GTIN";
+    if (isValidGtin(productA?.gtin) && isValidGtin(productB?.gtin) && fieldMatches(productA, productB, "gtin")) return "Same GTIN";
     if (sameBrand(productA, productB) && fieldMatches(productA, productB, "mpn")) return "Same brand and MPN";
-    if (sameBrand(productA, productB) && fieldMatches(productA, productB, "productCode")) return "Same brand and product code";
     if (sameBrand(productA, productB) && sameStrongIdentifier(productA, productB)) {
       return "Same identifier across differently named fields";
     }
@@ -102,9 +109,10 @@
   }
 
   function hasConflictingIdentifier(productA, productB) {
-    return ["gtin", "mpn", "productCode"].some(field => {
+    return ["gtin", "mpn"].some(field => {
       const valueA = normalizeCode(productA?.[field]);
       const valueB = normalizeCode(productB?.[field]);
+      if (field === "gtin" && (!isValidGtin(valueA) || !isValidGtin(valueB))) return false;
       return Boolean(valueA && valueB && valueA !== valueB);
     });
   }
@@ -161,7 +169,8 @@
     if (categoryMatch) { score += 0.1; reasons.push("Same category"); }
     if (colorMatch) { score += 0.15; reasons.push("Same colour"); }
     if (colorConflict) { score -= 0.25; reasons.push("Different colour or variant"); }
-    if (fieldMatches(productA, productB, "sku") && brandMatch) {
+    const retailerMatch = normalizeText(productA?.webshop) && sameValue(productA?.webshop, productB?.webshop);
+    if (fieldMatches(productA, productB, "sku") && brandMatch && retailerMatch) {
       score += 0.08;
       reasons.push("Same SKU, but no universal identifier");
     }

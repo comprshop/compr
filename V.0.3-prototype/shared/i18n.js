@@ -35,6 +35,7 @@
     "Compare your saved options before you decide.":{nl:"Vergelijk je opgeslagen opties voordat je kiest.",de:"Vergleiche deine gespeicherten Optionen vor der Entscheidung.",fr:"Comparez vos options enregistrées avant de choisir."},
     "COMPARE NOW":{nl:"NU VERGELIJKEN",de:"JETZT VERGLEICHEN",fr:"COMPARER"},
     "Find This Cheaper":{nl:"Vind dit goedkoper",de:"Günstiger finden",fr:"Trouver moins cher"},
+    "Sign in":{nl:"Inloggen",de:"Anmelden",fr:"Se connecter"},
     "Find the exact same product at other stores and see if you're overpaying.":{nl:"Vind exact hetzelfde product bij andere winkels en zie of je te veel betaalt.",de:"Finde dasselbe Produkt bei anderen Shops und prüfe, ob du zu viel zahlst.",fr:"Trouvez exactement le même produit ailleurs et vérifiez si vous payez trop."},
     "YOUR COMPARISONS":{nl:"JOUW VERGELIJKINGEN",de:"DEINE VERGLEICHE",fr:"VOS COMPARAISONS"},
     "View saved items":{nl:"Opgeslagen producten bekijken",de:"Gespeicherte Produkte ansehen",fr:"Voir les produits enregistrés"},

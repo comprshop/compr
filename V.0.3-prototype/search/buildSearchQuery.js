@@ -8,14 +8,18 @@ function cleanSearchValue(value) {
 
 function getSearchIdentifier(product) {
   const gtin = cleanSearchValue(product?.gtin);
-  if (/^\d{8,14}$/.test(gtin)) return gtin;
+  if (isValidSearchGtin(gtin)) return gtin;
   const mpn = cleanSearchValue(product?.mpn);
   if (mpn) return mpn;
-  for (const value of [product?.productCode, product?.sku]) {
-    const code = cleanSearchValue(value);
-    if (/[a-z]/i.test(code) && /\d/.test(code)) return code;
-  }
   return "";
+}
+
+function isValidSearchGtin(value) {
+  const digits = cleanSearchValue(value);
+  if (![8, 12, 13, 14].includes(digits.length) || !/^\d+$/.test(digits)) return false;
+  const sum = [...digits.slice(0, -1)].reverse().reduce((total, digit, index) =>
+    total + Number(digit) * (index % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === Number(digits.at(-1));
 }
 
 function buildExactSearchQuery(product) {
@@ -99,6 +103,7 @@ function buildProductSearchQueries(product) {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     cleanSearchValue,
+    isValidSearchGtin,
     getSearchIdentifier,
     buildExactSearchQuery,
     buildFallbackSearchQuery,

@@ -14,7 +14,7 @@
   }
 
   function strongIdentifier(product) {
-    return product?.gtin || product?.mpn || product?.productCode || null;
+    return product?.gtin || product?.mpn || null;
   }
 
   function buildDemoCatalog(product) {
@@ -60,7 +60,8 @@
       color: "Different colour",
       price: Math.max(1, Number((price * 0.72).toFixed(2))),
       webshop: "Alternative Demo Store",
-      productCode: identifier ? `${identifier}-ALT` : "DEMO-ALT-001",
+      mpn: product?.mpn ? `${product.mpn}-ALT` : null,
+      productCode: !product?.mpn && identifier ? `${identifier}-ALT` : "DEMO-ALT-001",
       providerLabel: "Cheaper, but not the same product"
     });
 

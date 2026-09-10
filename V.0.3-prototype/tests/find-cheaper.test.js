@@ -14,7 +14,7 @@ const product = {
   brand: "Nike",
   category: "Shoes",
   color: "White",
-  productCode: "CD6404-105",
+  mpn: "CD6404-105",
   price: "€109.99",
   currency: "EUR"
 };
@@ -38,7 +38,7 @@ assert.equal(provider.normalizeSearchResults([
 
 const demoResults = buildDemoCatalog(product);
 assert.equal(demoResults.length, 3);
-assert.equal(demoResults[0].productCode, "CD6404-105");
+assert.equal(demoResults[0].mpn, "CD6404-105");
 assert.ok(demoResults[0].price < 109.99);
 
 const ranked = provider.rankSearchResults(product, demoResults);
@@ -59,15 +59,15 @@ assert.equal(authoritative[0].matchConfidence, 0.68);
 assert.equal(
   matcher.compareProducts(product, {
     ...product,
-    productCode: "CD6404-101"
+    mpn: "CD6404-101"
   }).type,
   "NO_MATCH"
 );
 
 assert.equal(
   matcher.compareProducts(
-    { name: "Solo Fleece", brand: "Nike", sku: "STORE-123", color: "Black" },
-    { name: "Solo Fleece", brand: "Nike", sku: "STORE-123", color: "Black" }
+    { name: "Solo Fleece", brand: "Nike", sku: "STORE-123", color: "Black", webshop: "shop.example" },
+    { name: "Solo Fleece", brand: "Nike", sku: "STORE-123", color: "Black", webshop: "shop.example" }
   ).type,
   "LIKELY_SAME"
 );
@@ -82,7 +82,7 @@ assert.notEqual(
 
 assert.equal(
   matcher.compareProducts(
-    { name: "P-6000", brand: "Nike", productCode: "CD6404-105" },
+    { name: "P-6000", brand: "Nike", mpn: "CD6404-105" },
     { name: "P-6000", brand: "Nike", mpn: "CD6404-105" }
   ).type,
   "EXACT_MATCH"

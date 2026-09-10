@@ -72,8 +72,8 @@ const sameUrlProduct = {
   url: "https://shop.example/item?size=42"
 };
 
-assert.equal(getProductIdentity(codedProduct), "code:AB-123");
-assert.equal(sameProduct(codedProduct, sameCodedProduct), true);
+assert.match(getProductIdentity(codedProduct), /^url:/);
+assert.equal(sameProduct(codedProduct, sameCodedProduct), false);
 assert.equal(
   sameProduct(
     { productCode: "STYLE-1", gtin: "12345678" },
@@ -101,7 +101,7 @@ assert.equal(
     urlProduct,
     sameUrlProduct
   ]).length,
-  2
+  3
 );
 
 assert.equal(parsePrice("€ 129,95"), 129.95);

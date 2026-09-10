@@ -1,17 +1,30 @@
-function cleanProductName(value) {
-  return String(value || "")
-    .replace(/\s+/g, " ")
-    .replace(/\s+[|–—]\s+[^|–—]{2,60}$/, "")
-    .trim();
+function normalizeStoreName(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  let host = raw;
+  try { host = new URL(raw.includes("://") ? raw : `https://${raw}`).hostname; } catch {}
+  return host.replace(/^www\./, "").split(".")[0].replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+function cleanProductName(value, retailer = "") {
+  const compact = String(value || "").replace(/\s+/g, " ").trim();
+  const store = normalizeStoreName(retailer);
+  if (!store) return compact;
+  const parts = compact.split(/\s+(?:\||-|–|—)\s+/);
+  if (parts.length < 2) return compact;
+  const matchesStore = part => normalizeStoreName(part) === store;
+  if (matchesStore(parts.at(-1))) return parts.slice(0, -1).join(" - ").trim();
+  if (matchesStore(parts[0])) return parts.slice(1).join(" - ").trim();
+  return compact;
 }
 
 function productNameTokens(value) {
   return cleanProductName(value).toLowerCase().match(/[a-z0-9]+/g) || [];
 }
 
-function chooseBestProductName(candidates) {
+function chooseBestProductName(candidates, retailer = "") {
   const uuid = /^(?:urn:uuid:)?[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const cleaned = [...new Set((candidates || []).map(cleanProductName).filter(name =>
+  const cleaned = [...new Set((candidates || []).map(value => cleanProductName(value, retailer)).filter(name =>
     name.length >= 3 && name.length <= 240 && !uuid.test(name) &&
     !/\s[-|\u2013\u2014]\s*(?:bing|google|search|zoeken)\s*$/i.test(name)
   ))];
@@ -33,6 +46,13 @@ function chooseBestProductName(candidates) {
   })[0];
 }
 
+function chooseBestProductTitle(candidates, retailer = "") {
+  const name = chooseBestProductName(candidates, retailer);
+  const rawTitle = (candidates || []).map(value => String(value || "").replace(/\s+/g, " ").trim())
+    .find(value => cleanProductName(value, retailer) === name) || name;
+  return { rawTitle, name };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { cleanProductName, productNameTokens, chooseBestProductName };
+  module.exports = { normalizeStoreName, cleanProductName, productNameTokens, chooseBestProductTitle, chooseBestProductName };
 }
