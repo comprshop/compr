@@ -22,6 +22,35 @@ function productNameTokens(value) {
   return cleanProductName(value).toLowerCase().match(/[a-z0-9]+/g) || [];
 }
 
+function isUsableProductTitle(value) {
+  const title = String(value || "").replace(/\s+/g, " ").trim();
+  const uuid = /^(?:urn:uuid:)?[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return title.length >= 3 && title.length <= 240 && !uuid.test(title) &&
+    !/^(?:home|homepage|shop|store|products?|search|zoeken)$/i.test(title);
+}
+
+function isGenericPageSegment(value) {
+  return /^(?:headphones?|hoofdtelefoons?|koptelefoons?|earbuds?|audio|televisions?|tv(?:'s)?|laptops?|smartphones?|telefoons?|tablets?|wearables?|accessories|accessoires|products?|producten)$/i
+    .test(String(value || "").trim());
+}
+
+function cleanDocumentTitle(value, retailer = "") {
+  const compact = String(value || "").replace(/\s+/g, " ").trim();
+  const store = normalizeStoreName(retailer);
+  if (!store) return compact;
+  const parts = compact.split(/\s+(?:\||-|–|—)\s+/).map(part => part.trim()).filter(Boolean);
+  if (parts.length < 2) return compact;
+  const storeIndex = parts.findIndex(part => normalizeStoreName(part) === store);
+  if (storeIndex < 0) return compact;
+  const beforeStore = parts.slice(0, storeIndex);
+  if (!beforeStore.length) return parts.slice(storeIndex + 1).join(" - ").trim() || compact;
+  const firstIsStrong = productNameTokens(beforeStore[0]).length >= 4;
+  if (firstIsStrong) {
+    while (beforeStore.length > 1 && isGenericPageSegment(beforeStore.at(-1))) beforeStore.pop();
+  }
+  return beforeStore.join(" - ").trim();
+}
+
 function chooseBestProductName(candidates, retailer = "") {
   const uuid = /^(?:urn:uuid:)?[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const cleaned = [...new Set((candidates || []).map(value => cleanProductName(value, retailer)).filter(name =>
@@ -53,6 +82,25 @@ function chooseBestProductTitle(candidates, retailer = "") {
   return { rawTitle, name };
 }
 
+function selectProductTitle(sources, retailer = "") {
+  const ordered = [
+    ["jsonld", sources?.jsonLdName],
+    ["h1", sources?.h1],
+    ["og", sources?.ogTitle],
+    ["document", sources?.documentTitle]
+  ];
+  for (const [source, value] of ordered) {
+    if (!isUsableProductTitle(value)) continue;
+    const rawTitle = String(value).replace(/\s+/g, " ").trim();
+    const name = source === "document"
+      ? cleanDocumentTitle(rawTitle, retailer)
+      : cleanProductName(rawTitle, retailer);
+    if (isUsableProductTitle(name)) return { rawTitle, name, source };
+  }
+  return { rawTitle: "", name: "Productnaam niet gevonden", source: "none" };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeStoreName, cleanProductName, productNameTokens, chooseBestProductTitle, chooseBestProductName };
+  module.exports = { normalizeStoreName, cleanProductName, cleanDocumentTitle, isUsableProductTitle,
+    productNameTokens, chooseBestProductTitle, chooseBestProductName, selectProductTitle };
 }

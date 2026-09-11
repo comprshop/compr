@@ -35,13 +35,13 @@ async function getProductInfo() {
   const visibleName =
     document.querySelector("h1")?.innerText?.trim() || "";
 
-  const { name, rawTitle } = chooseBestProductTitle([
-    jsonProduct?.name,
-    visibleName,
-    document.querySelector('meta[property="og:title"]')?.content,
-    document.querySelector('meta[name="twitter:title"]')?.content,
-    document.title
-  ], window.location.hostname);
+  const { name, rawTitle } = selectProductTitle({
+    jsonLdName: jsonProduct?.name,
+    h1: visibleName,
+    ogTitle: document.querySelector('meta[property="og:title"]')?.content ||
+      document.querySelector('meta[name="twitter:title"]')?.content,
+    documentTitle: document.title
+  }, window.location.hostname);
 
   const image =
     getImageFromJsonLd(jsonProduct) ||
