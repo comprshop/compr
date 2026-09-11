@@ -27,11 +27,11 @@ $stage = Join-Path $buildRoot ('.compr-extension-stage-' + [guid]::NewGuid().ToS
 Import-Module (Join-Path $PSScriptRoot 'extension-production-staging.psm1') -Force
 
 $sourceFiles = @(
-  'manifest.json','popup.html','popup.js','compare.html','compare.js','background.js','content.js',
+  'manifest.json','popup.html','popup.js','compare.html','compare.js','account.html','account.js','background.js','content.js',
   'auth-receiver.html','auth-receiver.js','privacy.md',
   'icons/icon16.png','icons/icon32.png','icons/icon48.png','icons/icon128.png',
-  'styles/popup.css','styles/compare.css',
-  'shared/browserAdapter.js','shared/productEligibility.js','shared/popupState.js','shared/product.js',
+  'styles/popup.css','styles/compare.css','styles/account.css',
+  'shared/browserAdapter.js','shared/accountRoute.js','shared/productEligibility.js','shared/popupState.js','shared/product.js',
   'shared/currency.js','shared/similarity.js','shared/storage.js','shared/i18n.js','shared/auth.js',
   'shared/apiClient.js','shared/reliability.js',
   'detectors/price.js','detectors/brand.js','detectors/color.js','detectors/material.js','detectors/sizes.js',
@@ -56,6 +56,7 @@ try {
 Push-Location $source
 try {
   & node --test 'tests/integration.test.js'; if ($LASTEXITCODE -ne 0) { throw 'Extension integration tests failed.' }
+  & node --test 'tests/auth-flow-0.3.6.test.js'; if ($LASTEXITCODE -ne 0) { throw 'Auth flow tests failed.' }
   & node 'tests/core.test.js'; if ($LASTEXITCODE -ne 0) { throw 'Extension core tests failed.' }
   & node 'tests/find-cheaper.test.js'; if ($LASTEXITCODE -ne 0) { throw 'Find This Cheaper tests failed.' }
 } finally { Pop-Location }
@@ -128,7 +129,7 @@ const ComprRuntimeConfig = Object.freeze({
       (Test-Path -LiteralPath (Join-Path $stage 'shared\safariExperience.js'))) {
     throw 'Safari-specific runtime files entered the Chrome output.'
   }
-  foreach ($htmlPath in @($popupPath,$comparePath,(Join-Path $stage 'auth-receiver.html'))) {
+  foreach ($htmlPath in @($popupPath,$comparePath,(Join-Path $stage 'account.html'),(Join-Path $stage 'auth-receiver.html'))) {
     $html = Get-Content -LiteralPath $htmlPath -Raw -Encoding utf8
     $adapterIndex = $html.IndexOf('shared/browserAdapter.js')
     $dependent = [regex]::Match($html,'<script src="shared/(?!browserAdapter)[^"]+\.js"></script>')

@@ -30,7 +30,7 @@ test("runtime sources and production gates reject mojibake", () => {
   }
   assert.deepEqual(failures, []);
 
-  for (const page of ["popup.html", "compare.html", "auth-receiver.html"]) {
+  for (const page of ["popup.html", "compare.html", "account.html", "auth-receiver.html"]) {
     const html = fs.readFileSync(path.join(extensionRoot, page), "utf8");
     assert.match(html.slice(0, 300), /<meta charset="utf-8">/i, `${page} must declare UTF-8 early`);
   }

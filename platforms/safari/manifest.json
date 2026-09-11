@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "COMPR",
-  "version": "0.3.0",
+  "version": "0.3.6",
   "description": "Save and compare products across webshops, then check whether the same product is available for less.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [

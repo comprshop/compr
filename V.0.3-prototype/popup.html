@@ -136,16 +136,7 @@
           <span>Founding updates: Ultimate</span><small>Unlimited price checks</small>
         </button>
       </div>
-      <form id="accountSignIn" class="account-sign-in hidden">
-        <label for="accountEmail">Continue with email</label>
-        <div><input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com" required><button type="submit">Send code</button></div>
-        <small>No password needed. Your email and sign-in data are processed by Supabase and COMPR's email provider. <a href="https://getcompr.nl/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a></small>
-      </form>
-      <form id="accountVerify" class="account-sign-in hidden">
-        <label for="accountOtp">Enter the 8-digit code from your email</label>
-        <div><input id="accountOtp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" placeholder="12345678" required><button type="submit">Sign in</button></div>
-        <button id="accountChangeEmail" class="account-change-email" type="button">Use another email</button>
-      </form>
+      <button id="accountOpen" class="account-open hidden" type="button">Sign in</button>
       <div id="accountSessionActions" class="account-session-actions hidden">
         <button id="manageBilling" class="manage-billing hidden" type="button">Manage subscription</button>
         <button id="accountSignOut" class="account-sign-out" type="button">Sign out</button>
@@ -441,6 +432,7 @@
 
 
   <script src="shared/browserAdapter.js"></script>
+  <script src="shared/accountRoute.js"></script>
   <script src="shared/productEligibility.js"></script>
   <script src="shared/popupState.js"></script>
   <script src="shared/safariExperience.js"></script>

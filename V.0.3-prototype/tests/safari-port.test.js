@@ -85,7 +85,7 @@ test("Chrome and Safari guest behavior is explicitly isolated without browser sn
   const build = fs.readFileSync(path.join(root, "tools", "build-safari-extension.ps1"), "utf8");
   assert.match(build, /platform:\s*`"safari`"/); assert.match(build, /guestMode: true/);
   assert.match(popupJs, /isSafariGuest[\s\S]*ensureGuestSession/);
-  assert.match(popupJs, /accountSignIn\.classList\.add\("hidden"\)/);
+  assert.match(popupJs, /accountOpen\.classList\.add\("hidden"\)/);
   assert.match(popupJs, /await ComprApi\.resetGuest\(\)[\s\S]*await ComprBrowser\.storage\.local\.clear\(\)/);
 });
 

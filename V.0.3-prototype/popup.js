@@ -50,11 +50,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const upgradeOptions = document.getElementById("upgradeOptions");
   const billingStatus = document.getElementById("billingStatus");
   const manageBilling = document.getElementById("manageBilling");
-  const accountSignIn = document.getElementById("accountSignIn");
-  const accountEmail = document.getElementById("accountEmail");
-  const accountVerify = document.getElementById("accountVerify");
-  const accountOtp = document.getElementById("accountOtp");
-  const accountChangeEmail = document.getElementById("accountChangeEmail");
+  const accountOpen = document.getElementById("accountOpen");
   const accountSignOut = document.getElementById("accountSignOut");
   const accountDelete = document.getElementById("accountDelete");
   const accountSessionActions = document.getElementById("accountSessionActions");
@@ -67,7 +63,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currencyCode = "EUR";
   let exchangeRates = { rates: { EUR: 1 }, date: null };
   const renderController = ComprPopupState.createRenderController();
-  const PENDING_AUTH_EMAIL_KEY = "comprPendingAuthEmail";
   const isSafariGuest = ComprRuntimeConfig.platform === "safari" && ComprRuntimeConfig.guestMode === true;
 
   function requestExchangeRates() {
@@ -120,9 +115,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       accountSessionActions.classList.remove("hidden");
       accountSignOut.classList.toggle("hidden", isSafariGuest);
       accountDelete.textContent = isSafariGuest ? "Clear Safari beta data" : "Delete account";
-      accountSignIn.classList.add("hidden");
-      accountVerify.classList.add("hidden");
-      await ComprBrowser.storage.local.remove(PENDING_AUTH_EMAIL_KEY);
+      accountOpen.classList.add("hidden");
       if (!renderController.isCurrent("account-load", generation)) return;
       billingStatus.textContent = "";
     } catch (error) {
@@ -138,16 +131,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (isSafariGuest) {
         accountPlan.textContent = "Safari beta temporarily unavailable";
         accountUsage.textContent = "Check your connection and try again.";
-        accountSignIn.classList.add("hidden");
-        accountVerify.classList.add("hidden");
+        accountOpen.classList.add("hidden");
       } else if (error.code === "AUTH_REQUIRED") {
-        const pending = (await ComprBrowser.storage.local.get([PENDING_AUTH_EMAIL_KEY]))[PENDING_AUTH_EMAIL_KEY];
-        if (!renderController.isCurrent("account-load", generation)) return;
-        accountSignIn.classList.toggle("hidden", Boolean(pending));
-        accountVerify.classList.toggle("hidden", !pending);
+        accountOpen.classList.remove("hidden");
       } else {
-        accountSignIn.classList.add("hidden");
-        accountVerify.classList.add("hidden");
+        accountOpen.classList.add("hidden");
       }
     } finally {
       if (renderController.isCurrent("account-load", generation)) accountRefresh.disabled = false;
@@ -167,60 +155,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "Something went wrong. Please try again.";
   }
 
-  async function sendSignInLink(event) {
-    event.preventDefault();
-    const email = accountEmail.value.trim();
-    if (!email) return;
-    const button = accountSignIn.querySelector("button");
-    button.disabled = true;
-    billingStatus.textContent = "Sending your secure sign-in code…";
+  async function openAccountPage() {
+    accountOpen.disabled = true;
     try {
-      await ComprAuth.signInWithEmail(email);
-      await ComprBrowser.storage.local.set({ [PENDING_AUTH_EMAIL_KEY]: email });
-      accountSignIn.classList.add("hidden");
-      accountVerify.classList.remove("hidden");
-      accountOtp.value = "";
-      accountOtp.focus();
-      billingStatus.textContent = "Check your email and enter the 8-digit COMPR code.";
-    } catch (error) {
-      billingStatus.textContent = friendlyAccountError(error);
-    } finally {
-      button.disabled = false;
+      await ComprAccountRoute.open();
+      window.close();
+    } catch {
+      billingStatus.textContent = "The sign-in page couldn't be opened. Please try again.";
+      accountOpen.disabled = false;
+      accountOpen.focus();
     }
-  }
-
-  async function verifySignInCode(event) {
-    event.preventDefault();
-    const token = accountOtp.value.trim();
-    const email = (await ComprBrowser.storage.local.get([PENDING_AUTH_EMAIL_KEY]))[PENDING_AUTH_EMAIL_KEY];
-    if (!email || !/^\d{8}$/.test(token)) {
-      billingStatus.textContent = "Enter the 8-digit code from your newest COMPR email.";
-      return;
-    }
-    const button = accountVerify.querySelector("button[type='submit']");
-    button.disabled = true;
-    billingStatus.textContent = "Signing you in…";
-    try {
-      await ComprAuth.verifyEmailOtp(email, token);
-      await ComprBrowser.storage.local.remove(PENDING_AUTH_EMAIL_KEY);
-      accountVerify.classList.add("hidden");
-      await loadAccount();
-    } catch (error) {
-      billingStatus.textContent = /expired|invalid|token/i.test(error?.message || "")
-        ? "That code is invalid or expired. Request a new code and try again."
-        : friendlyAccountError(error);
-    } finally {
-      button.disabled = false;
-    }
-  }
-
-  async function changeSignInEmail() {
-    await ComprBrowser.storage.local.remove(PENDING_AUTH_EMAIL_KEY);
-    accountVerify.classList.add("hidden");
-    accountSignIn.classList.remove("hidden");
-    accountOtp.value = "";
-    billingStatus.textContent = "";
-    accountEmail.focus();
   }
 
   async function signOutAccount() {
@@ -778,9 +722,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
   on(accountRefresh, "click", loadAccount);
   on(manageBilling, "click", openBillingPortal);
-  on(accountSignIn, "submit", sendSignInLink);
-  on(accountVerify, "submit", verifySignInCode);
-  on(accountChangeEmail, "click", changeSignInEmail);
+  on(accountOpen, "click", openAccountPage);
   on(accountSignOut, "click", signOutAccount);
   on(accountDelete, "click", deleteAccount);
   on(chromeStoreReview, "click", openChromeStoreReview);

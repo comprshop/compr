@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Sign in to COMPR</title>
+  <link rel="stylesheet" href="styles/account.css">
+</head>
+<body>
+  <main class="account-page">
+    <header class="account-header">
+      <img src="icons/icon48.png" alt="">
+      <div><strong>COMPR</strong><span>Compare before you buy.</span></div>
+      <select data-language-select aria-label="Language"></select>
+    </header>
+
+    <section class="account-panel" aria-labelledby="accountTitle">
+      <span class="account-eyebrow">SECURE ACCOUNT ACCESS</span>
+      <h1 id="accountTitle">Sign in to COMPR</h1>
+      <p>Enter your email to receive a secure one-time code and magic link.</p>
+
+      <form id="requestForm" novalidate>
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="emailHint emailError">
+        <small id="emailHint">We use your email only for account access and essential service messages.</small>
+        <p id="emailError" class="field-error" role="alert"></p>
+        <button id="sendCode" class="primary" type="submit">Send code</button>
+      </form>
+
+      <form id="verifyForm" class="hidden" novalidate>
+        <label for="otp">8-digit code</label>
+        <input id="otp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{8}" maxlength="8" required aria-describedby="otpError">
+        <p id="otpError" class="field-error" role="alert"></p>
+        <button id="verifyCode" class="primary" type="submit">Sign in</button>
+        <button id="changeEmail" class="secondary" type="button">Use another email</button>
+      </form>
+
+      <section id="successPanel" class="success-panel hidden" tabindex="-1" aria-labelledby="successTitle">
+        <h2 id="successTitle">Check your email</h2>
+        <p>Use the newest COMPR code or magic link. You can keep this page open.</p>
+      </section>
+
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <nav class="account-links" aria-label="Account help">
+        <a href="https://getcompr.nl/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a>
+        <a href="https://getcompr.nl/support.html" target="_blank" rel="noopener noreferrer">Support</a>
+      </nav>
+      <button id="closeAccount" class="close-account" type="button">Back</button>
+    </section>
+  </main>
+
+  <script src="shared/browserAdapter.js"></script>
+  <script src="shared/i18n.js"></script>
+  <script src="shared/runtimeConfig.js"></script>
+  <script src="shared/auth.js"></script>
+  <script src="account.js"></script>
+</body>
+</html>

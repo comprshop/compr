@@ -42,6 +42,7 @@ const accountElements = {
   founding: document.getElementById("overviewFounding"),
   actions: document.getElementById("overviewActions"),
   manage: document.getElementById("overviewManage"),
+  signIn: document.getElementById("overviewSignIn"),
   refresh: document.getElementById("overviewRefresh")
 };
 
@@ -103,6 +104,7 @@ async function loadOverviewAccount() {
     accountElements.founding.classList.toggle("hidden", !me.foundingMemberNumber);
     accountElements.actions.classList.toggle("hidden", isSafariGuest || plan !== "free" || Number(me.usage?.remaining) > 1);
     accountElements.manage.classList.toggle("hidden", isSafariGuest || plan === "free");
+    accountElements.signIn.classList.add("hidden");
   } catch (error) {
     accountElements.plan.textContent = error.code === "AUTH_REQUIRED" ? "Sign in to use price checks" : "Account unavailable";
     accountElements.usage.textContent = "Open the COMPR account page to sign in.";
@@ -110,6 +112,7 @@ async function loadOverviewAccount() {
     accountElements.usageTrack.classList.add("hidden");
     accountElements.actions.classList.add("hidden");
     accountElements.manage.classList.add("hidden");
+    accountElements.signIn.classList.toggle("hidden", error.code !== "AUTH_REQUIRED");
     accountElements.founding.classList.add("hidden");
   } finally {
     accountElements.refresh.disabled = false;
@@ -117,6 +120,12 @@ async function loadOverviewAccount() {
 }
 
 accountElements.refresh.addEventListener("click", loadOverviewAccount);
+accountElements.signIn.addEventListener("click", async () => {
+  accountElements.signIn.disabled = true;
+  try { await ComprAccountRoute.open(); }
+  catch { showToast("Sign-in page couldn't be opened. Try again."); accountElements.signIn.focus(); }
+  finally { accountElements.signIn.disabled = false; }
+});
 accountElements.manage.addEventListener("click", async () => {
   try { await openSecureBilling(() => ComprApi.createBillingPortal(), "billing.stripe.com"); }
   catch (error) { showToast(friendlyBillingError(error)); }
@@ -779,7 +788,7 @@ elements.clearButton.addEventListener("click", handleClearAll);
 elements.cheaperDialogClose.addEventListener("click", closeCheaperDialog);
 elements.cheaperSignIn.addEventListener("click", async () => {
   try {
-    await ComprBrowser.tabs.create({ url: ComprBrowser.runtime.getURL("popup.html") });
+    await ComprAccountRoute.open();
     closeCheaperDialog();
   } catch {
     showToast("Sign-in page couldn't be opened. Try again.");

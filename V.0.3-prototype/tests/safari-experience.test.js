@@ -124,8 +124,9 @@ test("design tokens, reduced motion and compact width contracts remain centraliz
   const largePrice=UX.money(9999.99,"EUR","nl-NL");
   assert.match(largePrice,/9[.\s]999,99/);assert.match(css,/overflow-wrap:anywhere/);
 });
-test("Safari hides login while Chrome account flow remains in shared markup",()=>{
-  assert.match(popup,/safari-hidden/); assert.match(html,/id="accountSignIn"/); assert.match(html,/id="safariExperience"/);
+test("Safari hides Chrome account UI while the shared popup exposes the dedicated account route",()=>{
+  assert.match(popup,/safari-hidden/); assert.match(html,/id="accountOpen"/); assert.match(html,/id="safariExperience"/);
+  assert.match(fs.readFileSync(path.join(root,"shared/accountRoute.js"),"utf8"),/account\.html/);
   assert.match(fs.readFileSync(path.join(root,"shared/runtimeConfig.js"),"utf8"),/platform: "chrome"[\s\S]*guestMode: false/);
 });
 test("accessibility and stable mobile layout contracts are present",()=>{

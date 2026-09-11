@@ -50,7 +50,7 @@ test("AUTH_REQUIRED exposes the existing account flow without exposing an intern
   const i18n = fs.readFileSync(path.join(root, "shared", "i18n.js"), "utf8");
   assert.match(html, /id="cheaperSignIn"[^>]*>Sign in<\/button>/);
   assert.match(source, /code === "AUTH_REQUIRED"\) elements\.cheaperSignIn\.focus\(\)/);
-  assert.match(source, /runtime\.getURL\("popup\.html"\)/);
+  assert.match(source, /ComprAccountRoute\.open\(\)/);
   assert.match(source, /searchAction\.cancel\(\)/);
   assert.doesNotMatch(html, />AUTH_REQUIRED</);
   for (const translation of ["Inloggen", "Anmelden", "Se connecter"]) assert.match(i18n, new RegExp(translation));

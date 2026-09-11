@@ -1791,7 +1791,7 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,su
 .overview-founding { padding:6px 9px; border-radius:999px; background:#1d1c2a; color:#dcd8ff; font-size:8px; font-weight:900; letter-spacing:.6px; }
 .overview-account-actions { display:flex; gap:8px; }
 .overview-account button { min-height:36px; padding:0 12px; border:1px solid var(--compr-border); border-radius:10px; background:#fff; color:var(--compr-text); font-size:9px; font-weight:850; cursor:pointer; }
-.overview-account button.is-primary,.overview-manage { border-color:var(--compr-purple)!important; background:var(--compr-purple)!important; color:#fff!important; }
+.overview-account button.is-primary,.overview-manage,.overview-sign-in { border-color:var(--compr-purple)!important; background:var(--compr-purple)!important; color:#fff!important; }
 .overview-refresh { color:var(--compr-text-2)!important; }
 @media(max-width:760px){.overview-account{grid-template-columns:40px 1fr auto}.overview-founding{grid-column:2/-1;justify-self:start}.overview-account-actions,.overview-manage{grid-column:1/-1;width:100%}.overview-account-actions button{flex:1}.overview-refresh{grid-column:3;grid-row:1}}
 
