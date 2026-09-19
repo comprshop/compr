@@ -78,12 +78,12 @@ test("Safari platform override does not invent an App Store destination", () => 
   assert.doesNotMatch(override, /apps\.apple\.com/);
 });
 
-test("Chrome and Safari guest behavior is explicitly isolated without browser sniffing", () => {
+test("Chrome and Safari production builds keep guest access disabled without browser sniffing", () => {
   assert.match(runtimeConfig, /platform:\s*"chrome"/);
   assert.match(runtimeConfig, /guestMode:\s*false/);
   assert.match(authJs, /platform !== "safari" \|\| ComprRuntimeConfig\.guestMode !== true/);
   const build = fs.readFileSync(path.join(root, "tools", "build-safari-extension.ps1"), "utf8");
-  assert.match(build, /platform:\s*`"safari`"/); assert.match(build, /guestMode: true/);
+  assert.match(build, /platform:\s*`"safari`"/); assert.match(build, /guestMode: false/);
   assert.match(popupJs, /isSafariGuest[\s\S]*ensureGuestSession/);
   assert.match(popupJs, /accountOpen\.classList\.add\("hidden"\)/);
   assert.match(popupJs, /await ComprApi\.resetGuest\(\)[\s\S]*await ComprBrowser\.storage\.local\.clear\(\)/);
@@ -99,6 +99,7 @@ test("build exposes exclusive validation and staging modes and rejects unsafe in
   assert.match(build, /Choose exactly one mode: -ValidationOnly or -StageConverterInput/);
   assert.match(build, /safari-converter-input/);
   assert.match(build, /Output must remain under build/);
+  assert.match(build, /New-Item -ItemType Directory -Force -Path \(Split-Path -Parent \$out\)/);
   assert.match(build, /SAFARI_PRODUCTION_API_URL_REQUIRED/);
   assert.match(build, /\.env/);
   assert.match(build, /service_role/);
