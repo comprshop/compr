@@ -1,0 +1,28 @@
+COMPR getcompr.nl public_html upload manifest
+Generated locally: 2026-09-13
+Expected target directory for every entry: public_html/
+Post-upload check: compare byte size and SHA-256 where hosting access permits; otherwise fetch with cache bypass and verify content/version manually.
+
+SHA-256                                                          Bytes   Relative target                         Function / necessity
+afd95327c02f6ca918a5de6a5e69b2eea9e8cf86caabfdc005e6f395aafb30c2      937  public_html/404.html                  Safe not-found page; required hosting fallback
+16476c244337deee76d3fdefe18943d685bb18b07671efb7b16781df825ccc8d     1101  public_html/auth-callback.html        Auth callback shell/CSP; required for v0.3.6 magic links
+aaae90e58da9f564b324d18a646e36b71458a983c8dfb82a4e3ff901486aab29     3230  public_html/auth-callback.js          Validates and transfers callback session; required for v0.3.6
+00fdee3b4c8aa66a391ca64c9b30d1f4616cede7108313dfe098b91ef2262e76     1314  public_html/billing-return.html       Fail-closed beta billing return; required while public links/config may reference it
+570b7d37345c6202be857877d60770800b43f70b41f5c3d3c6d01a7e4c69a2a8   194450  public_html/compr-demo-poster-v4.png  Homepage Open Graph image; required
+ae97cad70ff8b8113435697bd5932f6a07acc1f131dddc883d67c62460fbdc96    18001  public_html/compr-logo.png            Site icon and brand image; required
+8b28fde2f00a7706647d6760992de971e3eace7b254e934e1290d1ba4794b1a3   144395  public_html/compr-popup.png           Homepage product demonstration; required
+0927c1bcd5dbbd14e7d94775151bcd8cdd41d05f05bbc92e28cbcaa7bdd0527a   213494  public_html/compr-product-overview.png Homepage product overview; required
+2747e1664ecc48881541d1529e73ee80c309669c17d4266a9a94f64b863d3f60    11060  public_html/index.html                Homepage and Store entry links; required
+40cc8f4d21c30ca30ddd1a115188d4ef61f442a452f8e3435f2c53bde55e8b90     1004  public_html/main.js                   Store links, menu and year; required
+1cac0b15858559e46ce511815d2c765aa6600f0bc258f505a83f5d7a19dc6d91     3413  public_html/methodology.html          Public comparison explanation; required by current navigation
+dc615848bb4694d7a62eb9aa96c1112d66142514bc25855ac4ed24eea8514356    15607  public_html/privacy.html              Full privacy policy; required for Store/auth release
+c0446a874ad1ef6bacbef31a2f2144adca48d9beb7b221f4b5fcabdc5d59380c      126  public_html/robots.txt                Search crawler policy; required for intended discovery behavior
+ce9410c46a8b25a8ba611264a3444e52a4e10457ffc19a2bfe04e86617eb6cd4      385  public_html/sitemap.xml               Intended public-page index; required for discovery handoff
+64ad6e394af9bebe01a73b3a0847f893baaec4b724d6f02ff925d7e8747e2932    10569  public_html/style.css                 Shared website layout; required
+99b396c1d7b1d3bed9c987205098dc354516e4ca6c3029d3e35fb39ac3ba7734     2708  public_html/support.html              Support/deletion instructions; required
+cc4c704247a5a26d77ecb2df6fa92689194cf3c2f6d017def79d6783f31a45d3     3508  public_html/terms.html                Beta terms linked throughout site; required
+
+Do not upload from website-live:
+.git/, .gitignore, README.md, HOSTNL_DEPLOYMENT_RUNBOOK.md, PAID_LAUNCH_DECISIONS.md,
+deployment-inventory.txt, beta-media/, website-preview/, obsolete v3 media/subtitles,
+unreferenced beta videos/posters/screenshots, tests/, logs, backups or local configuration.

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>COMPR UI preview</title>
+<style>html,body{margin:0;min-height:100%;background:#d9d9df}body{display:grid;place-items:start center;padding:24px}iframe{width:400px;height:760px;border:0;border-radius:20px;box-shadow:0 24px 70px rgba(18,18,28,.28);background:#fff}</style></head>
+<body><iframe id="preview" src="../V.0.3-prototype/popup.html" title="COMPR product preview"></iframe>
+<script>
+const frame=document.getElementById('preview');
+frame.addEventListener('load',()=>setTimeout(()=>{
+  const d=frame.contentDocument;
+  d.getElementById('loadingState').classList.add('hidden');
+  d.getElementById('emptyState').classList.add('hidden');
+  d.getElementById('productState').classList.remove('hidden');
+  d.querySelector('.app').dataset.state='product';
+  const image=d.getElementById('productImage');
+  image.src='../marketing/organic-tiktok-01/assets/premium-hoodie.png'; image.style.display='block';
+  d.getElementById('productBrand').textContent='NIKE';
+  d.getElementById('productCategory').textContent='Clothing';
+  d.getElementById('productName').textContent='Nike Solo Swoosh Fleece Hoodie Dark Grey Heather';
+  d.getElementById('productPrice').textContent='€64.99';
+  d.getElementById('productStore').textContent='nike.com';
+  d.getElementById('productAvailability').textContent='In stock when checked';
+  d.getElementById('productAvailability').dataset.status='in_stock';
+  d.getElementById('accountPlan').textContent='COMPR Pro';
+  d.getElementById('accountUsage').textContent='12 of 15 searches remaining';
+  d.getElementById('accountBadge').textContent='ACTIVE'; d.getElementById('accountBadge').classList.remove('hidden');
+  d.getElementById('usageTrack').classList.remove('hidden'); d.getElementById('usageBar').style.width='20%';
+  d.getElementById('upgradeOptions').classList.add('hidden');
+  d.getElementById('accountSessionActions').classList.remove('hidden'); d.getElementById('manageBilling').classList.remove('hidden');
+},700));
+</script></body></html>

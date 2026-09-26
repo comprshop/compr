@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /auth-callback.html
+Disallow: /billing-return.html
+
+Sitemap: https://getcompr.nl/sitemap.xml

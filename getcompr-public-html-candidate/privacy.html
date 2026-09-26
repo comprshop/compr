@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy Policy — COMPR</title>
+  <meta name="description" content="How COMPR collects, uses, stores and shares product, account, authentication and search data.">
+  <link rel="canonical" href="https://getcompr.nl/privacy.html">
+  <meta property="og:type" content="website"><meta property="og:title" content="Privacy Policy — COMPR"><meta property="og:description" content="How COMPR handles website, extension, account and search data."><meta property="og:url" content="https://getcompr.nl/privacy.html">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="icon" href="compr-logo.png" type="image/png">
+  <link rel="apple-touch-icon" href="compr-logo.png"><link rel="stylesheet" href="style.css?v=20260908-1">
+  <script src="main.js?v=20260908-1" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><div class="container nav-wrap"><a class="brand" href="index.html"><img src="compr-logo.png" width="40" height="40" alt=""><span>COMPR</span></a><a class="text-link" href="index.html">← Back to home</a></div></header>
+<main id="main" class="legal-page"><article class="container legal-content">
+  <p class="eyebrow">Privacy Policy</p>
+  <h1>How COMPR handles your data</h1>
+  <p class="legal-date"><strong>Effective and last updated:</strong> 8 September 2026. This policy applies to the free COMPR public beta.</p>
+
+  <h2>Who operates COMPR</h2>
+  <p>COMPR is currently operated as a beta project. The responsible legal or business identity is still being finalised and must be confirmed before paid services are enabled. For privacy questions or requests, contact the COMPR beta operator at <a href="mailto:ms-timon@outlook.com">ms-timon@outlook.com</a>.</p>
+
+  <h2>What COMPR collects and how</h2>
+  <h3>Product pages</h3>
+  <p>When you open COMPR on the active tab, the extension reads publicly visible information from that page to detect and display the product. Depending on what the retailer publishes, this can include the product name, brand, price, currency, image URL, colour, material, size, category, model and product identifiers, availability, retailer domain, product-page URL, delivery or return information, and visible promotions. COMPR can also check up to three same-retailer promotion pages linked from the active page for publicly displayed discount codes. Those requests omit retailer login credentials.</p>
+  <p>Opening COMPR processes this information locally. It is stored in your browser only when you choose to save the product. COMPR does not request your complete browsing history and does not continuously monitor tabs in the background.</p>
+
+  <h3>Saved products and preferences</h3>
+  <p>Products you choose to save, imported COMPR comparison data, country, language, preferred size and cached public currency rates are stored in <code>chrome.storage.local</code> in your browser profile. Saved product records can include the product-page data listed above and the time the product was saved. They are not automatically synchronised to COMPR's servers.</p>
+
+  <h3>Account and authentication</h3>
+  <p>When you request a sign-in code, COMPR sends the email address you entered to Supabase so it can create or locate your account and deliver the code through COMPR's configured email provider, currently Brevo. COMPR processes the one-time code you enter, a Supabase user ID, access token, refresh token and session expiry. Session data is stored in browser-extension storage so you can remain signed in. During email-link login, tokens pass through the URL fragment of COMPR's callback page; the fragment is removed from the visible browser history immediately before the session is completed inside the extension.</p>
+
+  <h3>Find This Cheaper</h3>
+  <p>COMPR sends product data externally only when you select <strong>Find This Cheaper</strong>. The request can include the product name, brand, price, currency, category, colour, material, size, availability, retailer, product-page URL and product identifiers needed to identify the same product. It also contains a random request ID and your authentication token.</p>
+  <p>The COMPR backend verifies the account, enforces usage limits and derives search queries from the product name, brand, model or identifiers. Those queries are sent to Brave Search to locate public retailer pages. The backend may request candidate retailer pages to validate the product and price before returning results. COMPR stores a one-way product fingerprint, request and outcome timestamps, whether a provider ran, whether a search counted, and the returned search response so duplicate requests can be handled consistently and usage can be enforced.</p>
+
+  <h3>Account, usage and Founding Access records</h3>
+  <p>Supabase stores the user ID, account timestamps, current plan, allowance and successful-search totals. If you join Founding Access, it also stores your selected future plan, signup source and confirmation/update timestamps. The website temporarily stores only the selected plan and source in browser local storage while email confirmation is pending. Founding Access is free and non-binding and does not start a payment or reserve a numbered place.</p>
+
+  <h3>Operational and network information</h3>
+  <p>The COMPR backend logs the request method and route and, when a request fails, a limited error code, message and technical details. Production mode does not intentionally log raw product-match diagnostics. Hosting, authentication, email, search, website and retailer providers can also receive ordinary network metadata such as IP address, user agent and request time when they deliver a request. COMPR does not use an analytics SDK, advertising pixel, affiliate tracker or crash-reporting SDK in the current build.</p>
+
+  <h2>Why COMPR uses this data</h2>
+  <p>COMPR processes account and requested price-check data to provide the service and take steps requested by you. Security, abuse prevention and service reliability are pursued as legitimate interests. Authentication and service emails are necessary to operate an account. Where consent is legally required for a future optional purpose, COMPR will request it separately before that processing begins.</p>
+  <ul>
+    <li>To detect, display, save and compare the product selected by the user.</li>
+    <li>To authenticate accounts and keep sessions active.</li>
+    <li>To perform a price check explicitly requested by the user and return relevant retailer offers.</li>
+    <li>To enforce free-search allowances, rate limits and request idempotency.</li>
+    <li>To record free Founding Access interest after email confirmation.</li>
+    <li>To secure, troubleshoot and improve the reliability of these user-facing features.</li>
+  </ul>
+
+  <h2>Where data is stored and how long</h2>
+  <ul>
+    <li><strong>Local browser data:</strong> saved products and preferences remain until you remove them, use Clear all, clear the extension's data or uninstall COMPR. The account page keeps the email being verified only in that page's memory and does not persist it. Authentication tokens remain until sign-out, replacement, expiry or revocation, clearing extension data, or uninstall.</li>
+    <li><strong>Search records:</strong> stored request identifiers, product fingerprints, outcomes and returned search responses become eligible for deletion after 30 days and are removed by the next hourly cleanup run.</li>
+    <li><strong>Usage records:</strong> current account and entitlement records remain while the account exists. Ended usage periods become eligible for deletion 90 days after the period ends and are removed by the next hourly cleanup run.</li>
+    <li><strong>Search cache:</strong> product and coupon cache records, including the persistent last-known-good cache, stop being used after 24 hours and are removed no later than the next hourly cleanup run.</li>
+    <li><strong>Temporary server data:</strong> expired checkout reservations become eligible for deletion 1 day after expiry and are removed by the next hourly cleanup run. In-memory rate-limit identifiers are removed after their one-hour window at the next cleanup or when the server restarts.</li>
+    <li><strong>Account data:</strong> account, entitlement, usage, search and Founding-interest records are removed earlier when confirmed account deletion is completed. No financial records are intentionally retained for the free beta because payments are disabled.</li>
+    <li><strong>Provider logs:</strong> retention of infrastructure logs and data held independently by Render, Supabase, Brevo, Brave, the website host, the European Central Bank and contacted retailer sites is controlled by those providers and the active account settings. COMPR will state a more specific period when it has been verified.</li>
+  </ul>
+
+  <h2>Service providers and disclosures</h2>
+  <ul>
+    <li><strong>Supabase:</strong> authentication, account, session, entitlement, usage, search-response and Founding Access records.</li>
+    <li><strong>Brevo:</strong> delivery of authentication emails and related email-delivery information.</li>
+    <li><strong>Render:</strong> hosting the COMPR backend and processing requests and limited operational/security logs.</li>
+    <li><strong>Brave Search API:</strong> product-derived search queries used to locate possible retailer offers.</li>
+    <li><strong>Public retailer websites:</strong> candidate product pages requested by the backend to validate identity, price and availability; same-retailer promotion links may also be requested from the browser without credentials.</li>
+    <li><strong>European Central Bank:</strong> public exchange-rate data for currency conversion. COMPR does not intentionally include account or product data in this request.</li>
+    <li><strong>Website host:</strong> delivery of this public website and its login callback. The intended host for <code>getcompr.nl</code> is HOST.nl; the current public beta may remain on GitHub Pages during transition.</li>
+    <li><strong>Microsoft/Outlook:</strong> support emails and any information you voluntarily include in them.</li>
+  </ul>
+  <p>COMPR does not sell user data. It does not use or transfer extension user data for personalised, retargeted or interest-based advertising. Data is transferred only as needed to provide COMPR's disclosed functionality, protect the service, comply with law, or as otherwise permitted by the Chrome Web Store User Data Policy.</p>
+
+  <h2>Payments</h2>
+  <p>The current public beta does not accept payment and does not collect payment-card details. Server-side Stripe integration exists for a possible future paid release but remains disabled for this beta. If paid plans are enabled later, checkout will be hosted by Stripe; COMPR would receive subscription and customer identifiers, status, price identifier and billing-period dates, but not the full card number. This policy and the Chrome Web Store disclosures must be reviewed before billing is enabled.</p>
+
+  <h2>Security</h2>
+  <p>Production network transfers initiated by COMPR use HTTPS. Private backend keys are kept out of the extension, account and usage mutations are performed by the backend, database access is restricted by roles and row-level security, and authentication is required for account and price-check endpoints. No internet service can guarantee absolute security, so users should not send passwords, sign-in links, payment-card details or private API keys to support.</p>
+
+  <h2>Your choices and rights</h2>
+  <p>Subject to applicable law, you may ask for access, correction, deletion, restriction or portability of your personal data, and object to processing based on legitimate interests. You may withdraw consent without affecting earlier lawful processing. You may also lodge a complaint with the Dutch Data Protection Authority or your local supervisory authority.</p>
+  <p>You can remove individual saved products or use Clear all on the comparison page. Signing out requests global session revocation and removes the local authentication session.</p>
+  <p>An authenticated user can select <strong>Delete account</strong>, type <strong>DELETE</strong> and accept a final confirmation. Only then does the backend hard-delete the Supabase Auth user. Existing access and refresh tokens can no longer authenticate, and deletion cascades through linked COMPR account, entitlement, usage, search and Founding-interest records. After the server confirms deletion, the extension clears saved products, preferences and session data from local extension storage. COMPR does not display a complete-success message if the server or local deletion step fails.</p>
+  <p>You may also request access, correction or deletion assistance, or withdraw Founding Access interest, by emailing <a href="mailto:ms-timon@outlook.com">ms-timon@outlook.com</a> from the address connected to the account. Accounts linked to a subscription are blocked from automated deletion, but paid subscriptions are disabled in this beta. No specific legal-retention exception has been identified for free-beta account data.</p>
+
+  <h2>Children</h2>
+  <p>COMPR is a general shopping utility and is not specifically directed to children. It does not intentionally request a date of birth or other age data. If a parent or guardian believes a child supplied personal data, they can contact COMPR to request review and eligible deletion.</p>
+
+  <h2>International transfers</h2>
+  <p>Some service providers may process data outside the European Economic Area. Where required, COMPR will rely on an applicable transfer mechanism such as an adequacy decision or standard contractual clauses and will document the selected provider configuration before paid launch.</p>
+
+  <h2>Website storage</h2>
+  <p>This website uses no analytics, advertising cookies, tracking pixels or fingerprinting. The current homepage does not set cookies or local storage. The login callback may use necessary local storage to complete a user-requested Founding Access confirmation. No cookie banner is shown because non-essential storage is not active.</p>
+
+  <h2>Chrome Web Store Limited Use</h2>
+  <p>COMPR's use of information received from Google APIs adheres to the Chrome Web Store User Data Policy, including the Limited Use requirements. COMPR limits use of extension user data to providing or improving its disclosed single purpose, limits transfers to permitted purposes, does not use the data for personalised advertising, and does not allow humans to read user data except with specific user consent for support, for security, to comply with law, or in aggregated and anonymised form for permitted internal operations.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>COMPR may update this policy when its functionality, service providers or legal/business details change. The effective date at the top will be updated. Material changes to data handling will be disclosed before the changed processing begins and, where required, new consent will be requested.</p>
+
+  <h2>Contact</h2>
+  <p>COMPR beta privacy and support contact: <a href="mailto:ms-timon@outlook.com">ms-timon@outlook.com</a></p>
+</article></main>
+<footer class="site-footer"><div class="container footer-bottom"><span>© <span data-year></span> COMPR</span><span><a href="terms.html">Terms</a> · <a href="support.html">Support</a> · <a href="index.html">Home</a></span></div></footer>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body,iframe{width:100%;height:100%;margin:0;border:0}body{overflow:hidden}</style></head><body><iframe id="view"></iframe><script>
+const q=new URLSearchParams(location.search), target=q.get('target')||'popup', mode=q.get('mode')||'loading';
+const frame=document.getElementById('view'); frame.src=target==='compare-preview'?'../tools/extension-compare-preview.html':target==='compare'?'../V.0.3-prototype/compare.html':'../V.0.3-prototype/popup.html';
+frame.addEventListener('load',()=>setTimeout(()=>{const d=frame.contentDocument;
+ if(target==='popup'){
+  for(const id of ['loadingState','productState','emptyState'])d.getElementById(id)?.classList.add('hidden');
+  const app=d.querySelector('.app'); app.dataset.state=mode;
+  if(mode==='product'||mode==='match'||mode==='quota'||mode==='error'){d.getElementById('productState').classList.remove('hidden');d.getElementById('productBrand').textContent='Fairphone';d.getElementById('productName').textContent='Fairphone 5 256 GB Matte Black with an intentionally long product title';d.getElementById('productPrice').textContent='€649.00';d.getElementById('productStore').textContent='European electronics retailer';d.getElementById('productAvailability').textContent='Available when checked';}
+  else if(mode==='loading')d.getElementById('loadingState').classList.remove('hidden'); else d.getElementById('emptyState').classList.remove('hidden');
+  if(mode==='logged-in'){d.getElementById('emptyState').classList.remove('hidden');d.getElementById('accountPlan').textContent='COMPR Pro';d.getElementById('accountUsage').textContent='12 of 15 checks remaining';}
+  if(mode==='logged-out'){d.getElementById('emptyState').classList.remove('hidden');d.getElementById('accountPlan').textContent='Sign in to use price checks';d.getElementById('accountSignIn').classList.remove('hidden');}
+  if(mode==='error')d.getElementById('billingStatus').textContent='The price check could not be completed. Try again.';
+  if(mode==='quota'){d.getElementById('billingStatus').textContent='You have used your available price checks.';d.getElementById('upgradeOptions').classList.remove('hidden');}
+ }
+ if(target==='safari'){
+  d.querySelector('.app').classList.add('safari-mode');[...d.querySelector('.app').children].forEach(x=>x.id==='safariExperience'||x.id==='toast'?null:x.classList.add('safari-hidden'));d.getElementById('safariExperience').classList.remove('hidden');d.getElementById('safariLoader').classList.add('hidden');
+  d.getElementById('safariEyebrow').textContent=mode==='match'?'Price checked':'Price check';d.getElementById('safariTitle').textContent=mode==='match'?'A lower price was found':mode==='no-match'?'No reliable lower price found':mode==='low-confidence'?'No confident match yet':mode==='feature-disabled'?'Price checks are temporarily unavailable':'The price check could not be completed';
+  d.getElementById('safariCopy').textContent=mode==='match'?'The delivered total is lower at another retailer.':mode==='no-match'?'COMPR did not find a sufficiently reliable cheaper offer.':mode==='low-confidence'?'Possible results were excluded because the product match was uncertain.':'Try again later.';
+  if(mode==='match'){d.getElementById('safariSavings').classList.remove('hidden');d.getElementById('safariSaving').textContent='Save €24.00';d.getElementById('safariOldTotal').textContent='€649.00';d.getElementById('safariDealTotal').textContent='€625.00';d.getElementById('safariShipping').textContent='Delivery included in both totals.';d.getElementById('safariPrimary').textContent='View retailer';d.getElementById('safariPrimary').classList.remove('hidden');}
+ }
+ const measured=d.querySelector('iframe')?.contentDocument||d,el=measured.documentElement;document.title=JSON.stringify({target,mode,clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,overflow:el.scrollWidth>el.clientWidth});
+},900));
+</script></body></html>

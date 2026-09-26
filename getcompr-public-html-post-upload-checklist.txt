@@ -1,0 +1,23 @@
+COMPR getcompr.nl post-upload checklist
+
+1. Upload only the 17 files in getcompr-public-html-candidate to public_html/.
+2. Compare remote byte sizes (and SHA-256 where the host supports it) with
+   getcompr-public-html-candidate-upload-manifest.txt.
+3. Open https://getcompr.nl/?cache-check=20260913 in a private window and verify
+   layout, images, navigation, Chrome Store links and a clean browser console.
+4. Open https://getcompr.nl/privacy.html?cache-check=20260913 and verify the full
+   privacy text, support link and a clean browser console.
+5. Open https://getcompr.nl/auth-callback.html without parameters. Expected:
+   a generic invalid/expired-link message and no Continue action.
+6. Open https://getcompr.nl/auth-callback.html?next=https%3A%2F%2Fevil.example.
+   Expected: fail closed, no navigation and no Continue action.
+7. Hard-refresh the homepage, privacy page and callback (Ctrl+F5), then repeat
+   steps 3-6 to rule out stale hosting/browser caches.
+8. In DevTools, confirm HTTPS has a valid certificate, there is no mixed content,
+   no unexpected request/tracker, and callback responses expose the intended CSP,
+   Referrer-Policy and other hosting security headers.
+9. Later, in a separate authorized session, test one real OTP/magic-link flow.
+   Expected: URL credentials disappear immediately, Continue targets only
+   chrome-extension://fpikkglicmmlhkcmnobecnkpomfnnclh/auth-receiver.html,
+   and the extension restores the authenticated session.
+10. Do not continue auth testing while the production backend CORS blocker remains.
