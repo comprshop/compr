@@ -60,8 +60,14 @@
       ["Tracking ✓","Wordt gevolgd ✓"]
     ]);
     function tr(value) {
-      const input=String(value||""); if(!isDutch) return ComprI18n.translate(input);
+      const input=String(value||"");
+      const countdown=input.match(/^Try again in (\d+) seconds\.$/);
+      if(countdown && !isDutch)return `${ComprI18n.translate('Try again in')} ${countdown[1]} ${ComprI18n.translate('seconds')}.`;
+      if(!isDutch) return ComprI18n.translate(input);
       if(nl.has(input)) return nl.get(input);
+      if(input==='Search paused')return 'Even wachten met zoeken';
+      if(input==='Your successful checks have not been used.')return 'Je beschikbare controles zijn niet gebruikt.';
+      const wait=input.match(/^Try again in (\d+) seconds\.$/);if(wait)return `Probeer het over ${wait[1]} seconden opnieuw.`;
       let dynamic=input.match(/^(\d+) free checks left$/); if(dynamic) return `${dynamic[1]} gratis controles over`;
       dynamic=input.match(/^Save at least (.+)$/); if(dynamic) return `Bespaar minimaal ${dynamic[1]}`;
       dynamic=input.match(/^Save (.+)$/); if(dynamic) return `Bespaar ${dynamic[1]}`;
@@ -78,6 +84,7 @@
     [[ui.privacyBadge,"Private by default"],[ui.privacyLink,"Privacy"],[ui.matchLabel,"Verified cheaper match"],[ui.currentTotalLabel,"Current total"],[ui.dealTotalLabel,"Deal total"],[ui.trackLabel,"COMPR"],[ui.proTitle,"Choose your COMPR plan"],[ui.proCopy,"Find better prices. Choose how often you want to search."],[ui.planLegend,"Choose a billing period"],[ui.monthlyLabel,"Monthly"],[ui.yearlyLabel,"Yearly"],[ui.freeCurrent,"Current plan"],[ui.freeFeatureOne,"5 successful checks in your first month"],[ui.freeFeatureTwo,"3 successful checks per month after that"],[ui.popularLabel,"Popular"],[ui.proFeatureOne,"15 successful price checks per month"],[ui.proFeatureTwo,"For regular COMPR users"],[ui.ultimateFeatureOne,"50 successful price checks per month"],[ui.ultimateFeatureTwo,"For frequent price checking"],[ui.chooseFree,"Continue Free"],[ui.tryPro,"Choose Pro"],[ui.tryUltimate,"Choose Ultimate"],[ui.restore,"Restore Purchases"],[ui.notNow,"Not now"],[ui.renewalCopy,"Subscriptions renew automatically unless cancelled in your Apple Account."],[ui.save,"Save & Compare"],[ui.couponsToggle,"Coupons"],[ui.detailsToggle,"Details"],[ui.guidanceOne,"Open one specific product page"],[ui.guidanceTwo,"Wait until its price and options are visible"],[ui.guidanceThree,"Open COMPR again"],[ui.welcomeTitle,"One account. Clear choices."],[ui.welcomeFeatureOne,"Sign in securely with Apple"],[ui.welcomeFeatureTwo,"Choose monthly or yearly COMPR Pro"],[ui.welcomeFeatureThree,"Change or cancel later through Apple"]].forEach(([node,label])=>{if(node)node.textContent=tr(label);});
     let product = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false;
     const store = ComprSafariExperience.createStore(render);
+    let cooldownTimer=null,safetyUntil=0;
     ui.image.addEventListener("error",()=>{ui.image.hidden=true;ui.image.parentElement.classList.add("missing-image");});
 
     function text(node, value) { node.textContent = tr(value) || ""; }
@@ -125,9 +132,16 @@
       ui.detailsToggle.classList.toggle("is-selected",Boolean(state.detailsOpen));
       const signingIn=state.view==="sign-in";
       show(ui.signIn,signingIn); text(ui.signIn,"Sign in with Apple");
-      ui.primary.disabled = busy; show(ui.primary, Boolean(state.primary)&&!signingIn); text(ui.primary, state.primary);
+      const startsSearch=['ready','no-match','provider-error','timeout','offline','safety-limit'].includes(state.view);
+      const wait=Math.max(ComprApi.cooldownSeconds?.()||0,Math.ceil((safetyUntil-Date.now())/1000));
+      ui.primary.disabled = busy || (startsSearch && wait>0);
+      if(startsSearch && wait>0) {
+        clearTimeout(cooldownTimer);
+        cooldownTimer=setTimeout(()=>{if(!disposed)render(store.get());},Math.min(wait*1000,1000));
+      }
+      show(ui.primary, Boolean(state.primary)&&!signingIn); text(ui.primary, state.primary);
       ui.primary.classList.toggle("is-retry",["no-match","offline","provider-error","timeout"].includes(state.view));
-      text(ui.eyebrow, state.eyebrow); text(ui.title, state.title); text(ui.copy, state.copy);
+      text(ui.eyebrow, state.eyebrow); text(ui.title, state.title); text(ui.copy, state.view==='safety-limit' ? wait>0 ? `Try again in ${wait} seconds.` : 'Try again' : state.copy);
       text(ui.live, `${state.title || ""} ${state.copy || ""}`.trim());
       show(ui.privacy,state.view === "ready"); ui.privacy.textContent = tr("Nothing is checked until you tap.");
       show(ui.usageNote,Boolean(state.usageNote)); text(ui.usageNote,state.usageNote);
@@ -227,6 +241,9 @@
       } catch (error) {
         if (disposed || generation!==actionGeneration) return;
         if(error?.code==="AUTH_REQUIRED"){showSignIn();return;}
+        const safety=ComprApi.safetyMessage?.(error);
+        if(safety){safetyUntil=Date.now()+safety.seconds*1000;store.set({view:'safety-limit',title:safety.title,
+          copy:`Try again in ${safety.seconds} seconds.`,usageNote:safety.copy,primary:'Try again',product});return;}
         const code=String(error?.code||""); const offline=!navigator.onLine;
         if(["NO_CONFIDENT_MATCH","NO_RESULTS_FROM_PROVIDER","INSUFFICIENT_PRODUCT_DATA","PRICE_NOT_COMPARABLE"].includes(code)){
           lastResponse={outcome:code,usageCharged:false};
@@ -332,7 +349,7 @@
       }catch{ui.live.textContent=tr("We couldn't complete the App Store request.");}
       finally{setPlanButtonsDisabled(false);}
     }
-    ui.primary.addEventListener("click", async () => { const state=store.get(); if(state.view==="quota") openProSheet(); else if(["offline","account-error","startup-error"].includes(state.view)&&!product) await initialize(); else if (state.view==="ready"||["no-match","provider-error","timeout","offline"].includes(state.view)) await search(); else if (["match","saved"].includes(state.view)&&match) { const retailer=ComprSafariExperience.validatedRetailer(match); if(retailer&&ComprSafariExperience.isPublicDealUrl(match.offer.url,retailer)) await ComprBrowser.tabs.openExternal(match.offer.url); } });
+    ui.primary.addEventListener("click", async () => { const state=store.get(); if(state.view==="quota") openProSheet(); else if(["offline","account-error","startup-error"].includes(state.view)&&!product) await initialize(); else if (state.view==="ready"||["no-match","provider-error","timeout","offline","safety-limit"].includes(state.view)) await search(); else if (["match","saved"].includes(state.view)&&match) { const retailer=ComprSafariExperience.validatedRetailer(match); if(retailer&&ComprSafariExperience.isPublicDealUrl(match.offer.url,retailer)) await ComprBrowser.tabs.openExternal(match.offer.url); } });
     ui.planAction.addEventListener("click",async()=>{if(["pro","ultimate"].includes(entitlement.plan))await ComprBrowser.tabs.openExternal("https://apps.apple.com/account/subscriptions");else openProSheet();});
     ui.save.addEventListener("click", async()=>{
       if(!product)return;
@@ -357,7 +374,7 @@
     ui.restore.addEventListener("click",restorePurchases);
     ui.notNow.addEventListener("click",closeProSheet);
     ui.proSheet.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();closeProSheet();return;}if(event.key!=="Tab")return;const focusable=[ui.planMonthly,ui.planYearly,ui.chooseFree,ui.tryPro,ui.tryUltimate,ui.restore,ui.privacyLink,ui.notNow].filter(node=>!node.disabled);const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}});
-    window.addEventListener("pagehide",()=>{disposed=true;actionGeneration+=1;},{once:true});
+    window.addEventListener("pagehide",()=>{disposed=true;actionGeneration+=1;clearTimeout(cooldownTimer);},{once:true});
     await initialize();
     if(new URL(window.location.href).searchParams.get("plans")==="1")openProSheet();
     return true;

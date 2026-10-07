@@ -26,6 +26,15 @@ const ComprApi = (() => {
   }
   // Persist request identity before sending: retries/reopening recover the same pending result.
   const inFlight = new Map();
+  const cooldowns = new Map();
+  let currentCooldown=0;
+  const SAFETY_CODES=new Set(['SEARCH_COOLDOWN','SEARCH_SAFETY_LIMIT','SEARCH_GLOBAL_BUDGET','SEARCH_PROVIDER_BUDGET','SEARCH_BUDGET_NOT_CONFIGURED','SEARCH_IN_PROGRESS']);
+  function safetyMessage(error) {
+    if(!SAFETY_CODES.has(error?.code))return null;
+    const seconds=Math.max(1,Math.ceil(Number(error?.details?.retryAfterSeconds)||10));
+    return {title:'Search paused',copy:'Your successful checks have not been used.',seconds};
+  }
+  function cooldownSeconds(){return Math.max(0,Math.ceil((currentCooldown-Date.now())/1000));}
   async function search(product, requestId = crypto.randomUUID(), options = {}) {
     const session = await ComprAuth.getSession();
     if (!session) { const error = new Error("Authentication required"); error.code = "AUTH_REQUIRED"; throw error; }
@@ -36,6 +45,17 @@ const ComprApi = (() => {
     let saved = key && storage ? (await storage.get([key]))[key] : null;
     if (saved?.confirmation?.expiresAt && Date.parse(saved.confirmation.expiresAt) <= Date.now()) saved = null;
     if (saved?.product) payload = saved.product;
+    if(!saved) {
+      const ownerKey=`comprSearchCooldown:${ComprRuntimeConfig.authProjectRef || 'default'}:${owner || 'session'}`;
+      const persisted=storage ? Number((await storage.get([ownerKey]))[ownerKey] || 0) : 0;
+      currentCooldown=Math.max(persisted,cooldowns.get(ownerKey)||0);
+      if(currentCooldown>Date.now()) {
+        const error=new Error('Please wait before starting another check');error.code='SEARCH_COOLDOWN';
+        error.details={retryAfterSeconds:cooldownSeconds()};throw error;
+      }
+      currentCooldown=Date.now()+10000;cooldowns.set(ownerKey,currentCooldown);
+      if(storage)await storage.set({[ownerKey]:currentCooldown});
+    }
     const id = saved?.requestId || requestId;
     if (key && storage) await storage.set({ [key]: { requestId: id, product: payload } });
     if (inFlight.has(id)) return inFlight.get(id);
@@ -48,7 +68,8 @@ const ComprApi = (() => {
       return response;
     } catch (error) {
       if (["NO_CONFIDENT_MATCH","NO_RESULTS_FROM_PROVIDER","PRICE_NOT_COMPARABLE","INSUFFICIENT_PRODUCT_DATA",
-        "SEARCH_PROVIDER_ERROR","MALFORMED_PROVIDER_RESPONSE","SEARCH_TIMEOUT","REQUEST_EXPIRED","RESULT_EXPIRED"].includes(error?.code) && key && storage)
+        "SEARCH_PROVIDER_ERROR","MALFORMED_PROVIDER_RESPONSE","SEARCH_TIMEOUT","REQUEST_EXPIRED","RESULT_EXPIRED",
+        "SEARCH_SAFETY_LIMIT","SEARCH_GLOBAL_BUDGET","SEARCH_PROVIDER_BUDGET","SEARCH_BUDGET_NOT_CONFIGURED"].includes(error?.code) && key && storage)
         await storage.remove([key]);
       throw error;
     } finally { inFlight.delete(id); }
@@ -71,7 +92,7 @@ const ComprApi = (() => {
     return null; // The rendered result stays intact; a later recovery retries the same confirmation.
   }
   return {
-    acceptResult,
+    acceptResult, safetyMessage, cooldownSeconds,
     me: (options = {}) => request("/v1/me", options),
     createCheckout: (plan, requestId = crypto.randomUUID()) => request("/v1/billing/checkout", {
       method: "POST",

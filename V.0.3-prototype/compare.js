@@ -754,7 +754,9 @@ async function handleFindCheaper(product) {
       NO_RESULTS_FROM_PROVIDER: ["Geen winkelresultaten", "Probeer het later opnieuw. Je zoekopdracht is niet gebruikt."],
       SEARCH_TIMEOUT: ["Zoeken duurde te lang", "Probeer het veilig opnieuw. Je zoekopdracht is niet gebruikt."]
     };
-    const friendly = friendlyErrors[code] || ["We couldn't complete the search", "Please try again in a moment."];
+    const safety=ComprApi.safetyMessage?.(error);
+    const safetyCopy=safety ? `${ComprI18n.translate(safety.copy)} ${ComprI18n.translate('Try again in')} ${safety.seconds} ${ComprI18n.translate('seconds')}.` : '';
+    const friendly = safety ? [safety.title,safetyCopy] : friendlyErrors[code] || ["We couldn't complete the search", "Please try again in a moment."];
     elements.cheaperDialogSubtitle.textContent = ComprI18n.translate(friendly[0]);
     elements.cheaperStatus.textContent = ComprI18n.translate(friendly[1]);
     elements.cheaperSignIn.classList.toggle("hidden", code !== "AUTH_REQUIRED");

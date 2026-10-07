@@ -3,6 +3,10 @@
     {code:"en",label:"EN"},{code:"nl",label:"NL"},{code:"de",label:"DE"},{code:"fr",label:"FR"}
   ];
   const copy={
+    "Search paused":{nl:"Even wachten met zoeken",de:"Suche pausiert",fr:"Recherche en pause"},
+    "Your successful checks have not been used.":{nl:"Je beschikbare controles zijn niet gebruikt.",de:"Deine erfolgreichen Preischecks wurden nicht verbraucht.",fr:"Vos vérifications disponibles n’ont pas été utilisées."},
+    "Try again in":{nl:"Probeer het opnieuw over",de:"Erneut versuchen in",fr:"Réessayez dans"},
+    "seconds":{nl:"seconden",de:"Sekunden",fr:"secondes"},
     "Sign in with Apple":{nl:"Log in met Apple",de:"Mit Apple anmelden",fr:"Se connecter avec Apple"},
     "One tap securely connects your saved products and COMPR Pro.":{nl:"Met één tik koppel je veilig je opgeslagen producten en COMPR Pro.",de:"Mit einem Tippen verbindest du deine gespeicherten Produkte und COMPR Pro sicher.",fr:"Un geste suffit pour relier en toute sécurité vos produits enregistrés et COMPR Pro."},
     "Use the COMPR app to sign in securely with your Apple Account.":{nl:"Gebruik de COMPR-app om veilig in te loggen met je Apple Account.",de:"Melde dich in der COMPR-App sicher mit deinem Apple Account an.",fr:"Utilisez l’app COMPR pour vous connecter en toute sécurité avec votre compte Apple."},
