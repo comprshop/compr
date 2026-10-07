@@ -8,6 +8,7 @@
     return Boolean(value && value.adapterVersion === VERSION && Object.isFrozen(value) &&
       typeof value.available === "boolean" && typeof value.safeHttpUrl === "function" &&
       typeof value.runtime?.getURL === "function" && typeof value.runtime?.onMessage === "function" &&
+      typeof value.runtime?.sendNativeMessage === "function" &&
       typeof value.storage?.local?.get === "function" && typeof value.tabs?.query === "function" &&
       typeof value.scripting?.executeScript === "function");
   }
@@ -63,6 +64,7 @@
       get id() { return api?.runtime?.id || ""; },
       getURL: path => { if (!api?.runtime?.getURL) throw unavailable("runtime.getURL"); return api.runtime.getURL(path); },
       sendMessage: message => invoke(api?.runtime, "sendMessage", [message], "runtime.sendMessage"),
+      sendNativeMessage: (applicationId, message) => invoke(api?.runtime, "sendNativeMessage", [applicationId, message], "runtime.sendNativeMessage"),
       onInstalled: listener => addListener(api?.runtime?.onInstalled, listener, "runtime.onInstalled"),
       onStartup: listener => addListener(api?.runtime?.onStartup, listener, "runtime.onStartup"),
       onMessage: listener => addListener(api?.runtime?.onMessage, listener, "runtime.onMessage")

@@ -17,7 +17,7 @@
     });
     sessionStored = true;
     const me = await ComprApi.me();
-    status.textContent = `Je bent ingelogd. Plan: ${me.plan}. Resterende zoekopdrachten: ${me.usage?.remaining ?? "onbeperkt"}.`;
+    status.textContent = `Je bent ingelogd. Plan: ${me.plan}. Resterende zoekopdrachten: ${me.usage?.remaining ?? "onbekend"}.`;
   } catch {
     if (sessionStored) await ComprAuth.clearSession().catch(() => {});
     status.textContent = "De login kon niet worden afgerond. Vraag een nieuwe link aan.";

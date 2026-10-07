@@ -3,7 +3,7 @@
   "name": "COMPR",
   "version": "0.3.6",
   "description": "Save and compare products across webshops, then check whether the same product is available for less.",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "nativeMessaging"],
   "host_permissions": [
     "https://www.ecb.europa.eu/*",
     "https://taosgvfdnblnopaywimf.supabase.co/*"

@@ -28,6 +28,7 @@ const elements = {
   cheaperWebSearch: document.getElementById("cheaperWebSearch"),
   cheaperBroadSearch: document.getElementById("cheaperBroadSearch"),
   cheaperStatus: document.getElementById("cheaperStatus"),
+  cheaperStart: document.getElementById("cheaperStart"),
   cheaperSignIn: document.getElementById("cheaperSignIn"),
   cheaperResults: document.getElementById("cheaperResults")
 };
@@ -52,6 +53,29 @@ let countryCode = "NL";
 let currencyCode = "EUR";
 let exchangeRates = { rates: { EUR: 1 }, date: null };
 const searchAction = ComprReliability.createLatestAction();
+let pendingFindProduct = null;
+let overviewPlan = "free";
+
+function inferCountryCode() {
+  const supported = new Set(ComprCurrency.COUNTRIES.map(country => country.code));
+  let locale;
+  try { locale = new Intl.Locale(navigator.language || "en"); }
+  catch { locale = { language: "en", region: "" }; }
+  const region = String(locale.region || "").toUpperCase();
+  if (supported.has(region)) return region;
+  let timeZone = "";
+  try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch {}
+  const timeZoneCountry = {
+    "Europe/Amsterdam":"NL", "Europe/Brussels":"BE", "Europe/Berlin":"DE", "Europe/Paris":"FR",
+    "Europe/Madrid":"ES", "Europe/Rome":"IT", "Europe/Dublin":"IE", "Europe/Vienna":"AT",
+    "Europe/Lisbon":"PT", "Europe/London":"GB", "Europe/Zurich":"CH", "Europe/Warsaw":"PL",
+    "Europe/Stockholm":"SE", "Europe/Oslo":"NO", "Europe/Copenhagen":"DK", "Europe/Prague":"CZ",
+    "Europe/Budapest":"HU", "Europe/Bucharest":"RO", "America/Toronto":"CA", "Australia/Sydney":"AU",
+    "Pacific/Auckland":"NZ", "Asia/Tokyo":"JP"
+  }[timeZone];
+  if (timeZoneCountry) return timeZoneCountry;
+  return locale.language === "de" ? "DE" : locale.language === "fr" ? "FR" : locale.language === "nl" ? "NL" : "US";
+}
 
 function setSearchButtonsDisabled(disabled) {
   document.querySelectorAll(".find-cheaper-button").forEach(button => { button.disabled = disabled; });
@@ -61,7 +85,16 @@ function requestExchangeRates() {
   return ComprCurrency.requestExchangeRates();
 }
 
+function tf(value, replacements) {
+  return ComprI18n.format(value, replacements);
+}
+
 async function openSecureBilling(createSession, allowedHost) {
+  if (ComprRuntimeConfig.platform === "safari") {
+    const error = new Error("Native Apple billing is unavailable in this build");
+    error.code = "APPLE_BILLING_UNAVAILABLE";
+    throw error;
+  }
   const session = await createSession();
   const url = new URL(session.url);
   if (url.protocol !== "https:" || url.hostname !== allowedHost) throw new Error("Invalid secure billing URL");
@@ -69,6 +102,7 @@ async function openSecureBilling(createSession, allowedHost) {
 }
 
 function friendlyBillingError(error) {
+  if (error?.code === "APPLE_BILLING_UNAVAILABLE") return ComprI18n.translate("Purchases are not available in this build yet.");
   if (error?.code === "AUTH_REQUIRED") return "Sign in to manage your subscription.";
   if (error?.code === "BILLING_NOT_CONFIGURED") return "Subscription management is temporarily unavailable. Your plan remains active.";
   if (error?.code === "BILLING_CUSTOMER_NOT_FOUND") return "We couldn't find a Stripe billing account for this subscription.";
@@ -83,31 +117,36 @@ async function loadOverviewAccount() {
     if (isSafariGuest) await ComprAuth.ensureGuestSession();
     const me = await ComprApi.me();
     const plan = String(me.plan || "free").toLowerCase();
+    overviewPlan = plan;
     accountElements.card.dataset.plan = plan;
     accountElements.plan.textContent = isSafariGuest ? "COMPR Safari Beta" : plan === "free" ? "COMPR Free" : `COMPR ${plan[0].toUpperCase()}${plan.slice(1)}`;
     accountElements.usage.textContent = me.usage?.remaining == null
-      ? "Unlimited price checks"
-      : `${me.usage.remaining} of ${me.usage.limit} price checks remaining`;
+      ? ComprI18n.translate("Usage unavailable")
+      : tf("{remaining} of {limit} price checks remaining", { remaining: me.usage.remaining, limit: me.usage.limit });
     const limit = Number(me.usage?.limit);
     const used = Number(me.usage?.used || 0);
     const hasLimit = Number.isFinite(limit) && limit > 0;
     accountElements.usageTrack.classList.toggle("hidden", !hasLimit);
     accountElements.usageBar.style.width = hasLimit ? `${Math.min(100, Math.max(0, used / limit * 100))}%` : "0%";
     if (me.billing?.periodEnd && plan !== "free") {
-      const date = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" })
+      const date = new Intl.DateTimeFormat(ComprI18n.getLanguage(), { day: "numeric", month: "short", year: "numeric" })
         .format(new Date(me.billing.periodEnd));
-      accountElements.billing.textContent = me.billing.cancelAtPeriodEnd ? `Access ends ${date}` : `Renews ${date}`;
+      accountElements.billing.textContent = me.billing.cancelAtPeriodEnd
+        ? tf("Access ends {date}", { date }) : tf("Renews {date}", { date });
     } else {
-      accountElements.billing.textContent = plan === "free" ? "Upgrade whenever you need more checks" : "";
+      accountElements.billing.textContent = plan === "free" ? ComprI18n.translate("Upgrade whenever you need more checks") : "";
     }
-    accountElements.founding.textContent = me.foundingMemberNumber ? `FOUNDING MEMBER #${me.foundingMemberNumber}` : "";
+    accountElements.founding.textContent = me.foundingMemberNumber
+      ? tf("FOUNDING MEMBER #{number}", { number: me.foundingMemberNumber }) : "";
     accountElements.founding.classList.toggle("hidden", !me.foundingMemberNumber);
-    accountElements.actions.classList.toggle("hidden", isSafariGuest || plan !== "free" || Number(me.usage?.remaining) > 1);
-    accountElements.manage.classList.toggle("hidden", isSafariGuest || plan === "free");
+    const isSafari = ComprRuntimeConfig.platform === "safari";
+    accountElements.actions.classList.toggle("hidden", isSafari || isSafariGuest || plan !== "free" || Number(me.usage?.remaining) > 1);
+    accountElements.manage.textContent = ComprI18n.translate(plan === "free" ? "View plans" : "Manage subscription");
+    accountElements.manage.classList.toggle("hidden", isSafariGuest || (!isSafari && plan === "free"));
     accountElements.signIn.classList.add("hidden");
   } catch (error) {
-    accountElements.plan.textContent = error.code === "AUTH_REQUIRED" ? "Sign in to use price checks" : "Account unavailable";
-    accountElements.usage.textContent = "Open the COMPR account page to sign in.";
+    accountElements.plan.textContent = ComprI18n.translate(error.code === "AUTH_REQUIRED" ? "Sign in to use price checks" : "Account unavailable");
+    accountElements.usage.textContent = ComprI18n.translate("Open the COMPR account page to sign in.");
     accountElements.billing.textContent = "";
     accountElements.usageTrack.classList.add("hidden");
     accountElements.actions.classList.add("hidden");
@@ -127,7 +166,17 @@ accountElements.signIn.addEventListener("click", async () => {
   finally { accountElements.signIn.disabled = false; }
 });
 accountElements.manage.addEventListener("click", async () => {
-  try { await openSecureBilling(() => ComprApi.createBillingPortal(), "billing.stripe.com"); }
+  try {
+    if (ComprRuntimeConfig.platform === "safari") {
+      if (["pro", "ultimate"].includes(overviewPlan)) {
+        await ComprBrowser.tabs.openExternal("https://apps.apple.com/account/subscriptions");
+      } else {
+        await ComprBrowser.tabs.create({ url: ComprBrowser.runtime.getURL("popup.html?plans=1") });
+      }
+      return;
+    }
+    await openSecureBilling(() => ComprApi.createBillingPortal(), "billing.stripe.com");
+  }
   catch (error) { showToast(friendlyBillingError(error)); }
 });
 accountElements.actions.querySelectorAll("[data-overview-checkout]").forEach(button => {
@@ -215,12 +264,23 @@ function showToast(message) {
   toastTimer = window.setTimeout(() => elements.toast.classList.add("hidden"), 2200);
 }
 
+function currentLanguage() {
+  return globalThis.ComprI18n?.getLanguage?.() || "en";
+}
+
 function closeDataMenu() {
   document.querySelector(".data-menu")?.removeAttribute("open");
 }
 
 function updateProductCount(count) {
-  elements.productCount.textContent = count === 1 ? "1 item" : `${count} items`;
+  const language = currentLanguage();
+  elements.productCount.textContent = language === "nl"
+    ? `${count} ${count === 1 ? "product" : "producten"}`
+    : language === "de"
+      ? `${count} ${count === 1 ? "Produkt" : "Produkte"}`
+      : language === "fr"
+        ? `${count} ${count === 1 ? "produit" : "produits"}`
+        : count === 1 ? "1 item" : `${count} items`;
 }
 
 function updateInsights(products) {
@@ -239,9 +299,16 @@ function updateInsights(products) {
     elements.insightPriceRange.textContent = ComprCurrency.format(highest - lowest, currencyCode, countryCode);
   }
   elements.insightPriceLabel.textContent = "potential difference";
+  const language = currentLanguage();
   elements.currencyNote.textContent = exchangeRates.date
-    ? `Indicative conversion using ECB reference rates from ${exchangeRates.date}. Original store prices remain visible.`
-    : "Original store prices are shown when currency conversion is unavailable.";
+    ? language === "nl" ? `Indicatieve omrekening met ECB-koersen van ${exchangeRates.date}. De oorspronkelijke winkelprijzen blijven zichtbaar.`
+      : language === "de" ? `Unverbindliche Umrechnung mit EZB-Kursen vom ${exchangeRates.date}. Die ursprünglichen Shoppreise bleiben sichtbar.`
+        : language === "fr" ? `Conversion indicative selon les taux BCE du ${exchangeRates.date}. Les prix d’origine restent visibles.`
+          : `Indicative conversion using ECB reference rates from ${exchangeRates.date}. Original store prices remain visible.`
+    : language === "nl" ? "De oorspronkelijke winkelprijzen worden getoond als omrekenen niet mogelijk is."
+      : language === "de" ? "Die ursprünglichen Shoppreise werden angezeigt, wenn keine Umrechnung möglich ist."
+        : language === "fr" ? "Les prix d’origine sont affichés lorsque la conversion est indisponible."
+          : "Original store prices are shown when currency conversion is unavailable.";
 }
 
 function renderMessage(title, message) {
@@ -331,9 +398,14 @@ function renderProducts() {
     availableOnly: elements.availableOnly.checked
   });
 
-  elements.resultsSummary.textContent = visible.length === allProducts.length
-    ? `Showing all ${allProducts.length} saved products`
-    : `Showing ${visible.length} of ${allProducts.length} saved products`;
+  const language = currentLanguage();
+  elements.resultsSummary.textContent = language === "nl"
+    ? visible.length === allProducts.length ? `Alle ${allProducts.length} opgeslagen producten` : `${visible.length} van ${allProducts.length} opgeslagen producten`
+    : language === "de"
+      ? visible.length === allProducts.length ? `Alle ${allProducts.length} gespeicherten Produkte` : `${visible.length} von ${allProducts.length} gespeicherten Produkten`
+      : language === "fr"
+        ? visible.length === allProducts.length ? `Les ${allProducts.length} produits enregistrés` : `${visible.length} produits sur ${allProducts.length}`
+        : visible.length === allProducts.length ? `Showing all ${allProducts.length} saved products` : `Showing ${visible.length} of ${allProducts.length} saved products`;
 
   if (!visible.length) {
     elements.container.innerHTML = "";
@@ -369,13 +441,23 @@ async function loadProducts() {
   allProducts = await ComprStorage.getSavedProducts();
   populateCategories(allProducts);
   renderProducts();
+  await consumePendingFindCheaper();
+}
+
+async function consumePendingFindCheaper() {
+  const data = await ComprBrowser.storage.local.get(["pendingFindCheaperIdentity", "pendingFindCheaperAt"]);
+  await ComprBrowser.storage.local.remove(["pendingFindCheaperIdentity", "pendingFindCheaperAt"]);
+  const age = Date.now() - Number(data.pendingFindCheaperAt || 0);
+  if (!data.pendingFindCheaperIdentity || age < 0 || age > 5 * 60 * 1000) return;
+  const product = allProducts.find(item => ComprProduct.getProductIdentity(item) === data.pendingFindCheaperIdentity);
+  if (product) prepareFindCheaper(product);
 }
 
 async function handleRemove(identity) {
   allProducts = await ComprStorage.removeSavedProduct(identity);
   populateCategories(allProducts);
   renderProducts();
-  showToast("Product removed");
+  showToast(ComprI18n.translate("Product removed"));
 }
 
 function formatPrototypePrice(result) {
@@ -397,7 +479,7 @@ function getCurrentProductAmount(product) {
 }
 
 function matchPresentation(type) {
-  return ({
+  const presentation = ({
     EXACT_MATCH: { label: "Exact match", className: "exact" },
     HIGH_CONFIDENCE_MATCH: { label: "Strong match", className: "exact" },
     LIKELY_MATCH: { label: "Likely match", className: "likely" },
@@ -406,6 +488,7 @@ function matchPresentation(type) {
     SIMILAR: { label: "Similar product", className: "similar" },
     NO_MATCH: { label: "Different product", className: "rejected" }
   })[type] || { label: "Possible match", className: "similar" };
+  return { ...presentation, label: ComprI18n.translate(presentation.label) };
 }
 
 function userFacingMatchReasons(reasons) {
@@ -421,26 +504,30 @@ function userFacingMatchReasons(reasons) {
     "Same colour variant": "Same colour",
     "Different colour or variant": "Different colour or variant"
   };
-  return (Array.isArray(reasons) ? reasons : []).map(reason => labels[reason] || "").filter(Boolean).slice(0, 3);
+  return (Array.isArray(reasons) ? reasons : []).map(reason => labels[reason] ? ComprI18n.translate(labels[reason]) : "").filter(Boolean).slice(0, 3);
 }
 
 function renderCheaperCurrentProduct(product) {
   elements.cheaperCurrentProduct.replaceChildren();
   const copy = document.createElement("div");
   const eyebrow = document.createElement("span");
-  eyebrow.textContent = product.brand || "Selected product";
+  eyebrow.textContent = product.brand || ComprI18n.translate("Selected product");
   const title = document.createElement("strong");
-  title.textContent = product.name || "Product name unavailable";
+  title.textContent = product.name || ComprI18n.translate("Product name unavailable");
   const meta = document.createElement("p");
   const identifier = product.gtin || product.mpn || product.sku;
-  const identifierLabel = product.gtin ? "GTIN" : product.mpn ? "MPN" : product.sku ? "Retailer product code" : "";
+  const identifierLabel = product.gtin ? "GTIN" : product.mpn ? "MPN" : product.sku ? ComprI18n.translate("Retailer product code") : "";
   meta.textContent = identifier && identifierLabel
     ? `${identifierLabel}: ${identifier}`
-    : "No identifier detected — matching will be less certain.";
+    : ComprI18n.translate("No identifier detected — matching will be less certain.");
   copy.append(eyebrow, title, meta);
 
   const price = document.createElement("b");
-  price.textContent = product.convertedPrice || product.price || "Price unavailable";
+  const amount = getCurrentProductAmount(product);
+  const displayedCurrency = product.convertedCurrency || product.currency || ComprCurrency.detectCurrency(product.price) || currencyCode;
+  price.textContent = Number.isFinite(amount)
+    ? ComprCurrency.format(amount, displayedCurrency, countryCode)
+    : ComprI18n.translate("Price unavailable");
   elements.cheaperCurrentProduct.append(copy, price);
 }
 
@@ -508,7 +595,9 @@ function createCheaperResult(result, currentProduct) {
   ) {
     const saving = document.createElement("p");
     saving.className = "demo-saving";
-    saving.textContent = `${ComprCurrency.format(currentAmount - resultAmount, resultCurrency, countryCode)} lower than the saved price`;
+    saving.textContent = tf("{amount} lower than the saved price", {
+      amount: ComprCurrency.format(currentAmount - resultAmount, resultCurrency, countryCode)
+    });
     card.append(top, imageFrame, name, store, price, saving, reason);
   } else {
     card.append(top, imageFrame, name, store, price, reason);
@@ -523,7 +612,7 @@ function createCheaperResult(result, currentProduct) {
     action.href = result.url;
     action.target = "_blank";
     action.rel = "noopener noreferrer";
-    action.textContent = ["SIMILAR", "POSSIBLE_MATCH"].includes(result.matchType) ? "View possible match" : "Go directly to store";
+    action.textContent = ComprI18n.translate(["SIMILAR", "POSSIBLE_MATCH"].includes(result.matchType) ? "View possible match" : "Go directly to store");
   } else {
     action.type = "button";
     action.disabled = true;
@@ -546,28 +635,30 @@ function renderSavingsHero(result, currentProduct) {
   const currency = result.currency || currentProduct.convertedCurrency || currentProduct.currency || "EUR";
   const label = document.createElement("span");
   label.className = "savings-kicker";
-  label.textContent = "BETTER PRICE FOUND";
+  label.textContent = ComprI18n.translate("BETTER PRICE FOUND");
   const title = document.createElement("h3");
   title.textContent = result.matchType === "EXACT_MATCH" ? "The same product for less" : "A strong match for less";
   const prices = document.createElement("div");
   prices.className = "savings-prices";
   const current = document.createElement("div");
-  current.innerHTML = `<span>Current price</span><s>${ComprCurrency.format(currentAmount, currency, countryCode)}</s>`;
+  current.innerHTML = `<span>${ComprI18n.translate("Current price")}</span><s>${ComprCurrency.format(currentAmount, currency, countryCode)}</s>`;
   const best = document.createElement("div");
-  best.innerHTML = `<span>Best price</span><strong>${ComprCurrency.format(bestAmount, currency, countryCode)}</strong>`;
+  best.innerHTML = `<span>${ComprI18n.translate("Best price")}</span><strong>${ComprCurrency.format(bestAmount, currency, countryCode)}</strong>`;
   prices.append(current, best);
   const saving = document.createElement("p");
   saving.className = "savings-total";
-  saving.innerHTML = `<span>YOU SAVE</span><strong>${ComprCurrency.format(currentAmount - bestAmount, currency, countryCode)}</strong>`;
+  saving.innerHTML = `<span>${ComprI18n.translate("YOU SAVE")}</span><strong>${ComprCurrency.format(currentAmount - bestAmount, currency, countryCode)}</strong>`;
   const meta = document.createElement("p");
   meta.className = "savings-meta";
-  meta.textContent = `${result.webshop || "Retailer"} · Price checked just now`;
+  meta.textContent = tf("{retailer} · Price checked just now", {
+    retailer: result.webshop || ComprI18n.translate("Retailer")
+  });
   const action = document.createElement("a");
   action.className = "savings-action";
   action.href = result.url;
   action.target = "_blank";
   action.rel = "noopener noreferrer";
-  action.textContent = "View cheaper option";
+  action.textContent = ComprI18n.translate("View cheaper option");
   elements.cheaperSavingsHero.append(label, title, prices, saving, meta, action);
   elements.cheaperSavingsHero.classList.remove("hidden");
   return true;
@@ -578,10 +669,11 @@ async function handleFindCheaper(product) {
   if (!action) return;
   setSearchButtonsDisabled(true);
   renderCheaperCurrentProduct(product);
-  elements.cheaperDialogSubtitle.textContent = "Building a safe product fingerprint…";
-  elements.cheaperStatus.textContent = "Searching public retailer pages…";
+  elements.cheaperDialogSubtitle.textContent = ComprI18n.translate("Building a reliable product fingerprint…");
+  elements.cheaperStatus.textContent = ComprI18n.translate("Searching reliable retailer pages…");
   elements.cheaperResults.replaceChildren();
   elements.cheaperSignIn.classList.add("hidden");
+  elements.cheaperStart.classList.add("hidden");
   for (let index = 0; index < 2; index += 1) {
     const skeleton = document.createElement("div");
     skeleton.className = "result-skeleton";
@@ -590,7 +682,7 @@ async function handleFindCheaper(product) {
     elements.cheaperResults.appendChild(skeleton);
   }
   renderSavingsHero(null, product);
-  elements.cheaperQuery.textContent = "Preparing query…";
+  elements.cheaperQuery.textContent = ComprI18n.translate("Preparing search…");
   elements.cheaperWebSearch.removeAttribute("href");
   elements.cheaperBroadSearch.removeAttribute("href");
 
@@ -600,7 +692,8 @@ async function handleFindCheaper(product) {
     elements.cheaperDialog.setAttribute("open", "");
   }
 
-  const loadingStages = ["Finding the same product…", "Checking other stores…", "Comparing prices…"];
+  const loadingStages = ["Finding the same product…", "Checking other stores…", "Comparing total prices…"]
+    .map(value => ComprI18n.translate(value));
   let loadingStage = 0;
   elements.cheaperDialogSubtitle.textContent = loadingStages[loadingStage];
   const loadingTimer = window.setInterval(() => {
@@ -622,13 +715,6 @@ async function handleFindCheaper(product) {
     elements.cheaperQuery.textContent = query || "Not enough product information";
     elements.cheaperWebSearch.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
     elements.cheaperBroadSearch.href = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(response.fallbackQuery || product.name || query)}`;
-    const liveMode = response.mode === "live-web";
-    elements.cheaperDialogSubtitle.textContent = response.backendConnected && liveMode
-      ? "Live web search connected"
-      : response.backendConnected
-      ? "Local backend connected - safe demo data"
-      : "Backend offline - bundled demo fallback";
-
     const matchPriority = { EXACT_MATCH: 5, HIGH_CONFIDENCE_MATCH: 4 };
     const visibleResults = response.results.filter(result =>
       ["EXACT_MATCH", "HIGH_CONFIDENCE_MATCH"].includes(result.matchType)
@@ -638,22 +724,20 @@ async function handleFindCheaper(product) {
     const savingsMatch = trustedResults.find(result => ["EXACT_MATCH", "HIGH_CONFIDENCE_MATCH"].includes(result.matchType));
     const hasSavingsHero = renderSavingsHero(savingsMatch, product);
     const accepted = trustedResults.length;
-    const cacheLabel = response.cached ? " Loaded from the local cache." : "";
-    const sourceLabel = response.backendConnected ? " Local backend connected." : " Offline fallback active.";
+    elements.cheaperDialogSubtitle.textContent = ComprI18n.translate(accepted ? "Reliable matches found" : "No reliable match found");
     elements.cheaperStatus.textContent = response.outcome === "NO_RESULTS_FROM_PROVIDER"
-      ? `No retailer results were returned right now. Your search wasn't used.${cacheLabel}`
+      ? ComprI18n.translate("No retailer results were returned. Your search was not used.")
       : ["NO_CONFIDENT_MATCH", "INSUFFICIENT_PRODUCT_DATA", "PRICE_NOT_COMPARABLE"].includes(response.outcome)
-      ? `Geen betrouwbare match gevonden. COMPR toont liever geen resultaat dan een verkeerd product. Je zoekopdracht is niet gebruikt.${cacheLabel}`
-      : response.summary.exact
-      ? `${response.summary.exact} exact ${liveMode ? "live" : "demo"} match found. ${accepted} result${accepted === 1 ? "" : "s"} passed the matcher.${sourceLabel}${cacheLabel}`
+      ? ComprI18n.translate("No better reliable product was found. Your search was not used.")
       : accepted
-      ? `${accepted} trusted ${liveMode ? "live" : "demo"} match${accepted === 1 ? "" : "es"}. The strongest matches are shown first.${sourceLabel}${cacheLabel}`
-      : `Geen betrouwbare match gevonden. COMPR toont liever geen resultaat dan een verkeerd product.${cacheLabel}`;
+      ? tf("Reliable results: {count}. Best matches are shown first.", { count: accepted })
+      : ComprI18n.translate("No better reliable product was found. Your search was not used.");
 
     const resultsToRender = hasSavingsHero ? trustedResults.filter(result => result !== savingsMatch) : trustedResults;
     resultsToRender.forEach(result => {
       elements.cheaperResults.appendChild(createCheaperResult(result, product));
     });
+    if (accepted && searchAction.isCurrent(action)) void ComprApi.acceptResult(response);
   } catch (error) {
     if (!searchAction.isCurrent(action) || error?.name === "AbortError") return;
     window.clearInterval(loadingTimer);
@@ -671,15 +755,15 @@ async function handleFindCheaper(product) {
       SEARCH_TIMEOUT: ["Zoeken duurde te lang", "Probeer het veilig opnieuw. Je zoekopdracht is niet gebruikt."]
     };
     const friendly = friendlyErrors[code] || ["We couldn't complete the search", "Please try again in a moment."];
-    elements.cheaperDialogSubtitle.textContent = friendly[0];
-    elements.cheaperStatus.textContent = friendly[1];
+    elements.cheaperDialogSubtitle.textContent = ComprI18n.translate(friendly[0]);
+    elements.cheaperStatus.textContent = ComprI18n.translate(friendly[1]);
     elements.cheaperSignIn.classList.toggle("hidden", code !== "AUTH_REQUIRED");
     if (code === "AUTH_REQUIRED") elements.cheaperSignIn.focus();
     if (["NO_CONFIDENT_MATCH", "NO_RESULTS_FROM_PROVIDER", "INSUFFICIENT_PRODUCT_DATA", "PRICE_NOT_COMPARABLE", "SEARCH_PROVIDER_ERROR", "SEARCH_TIMEOUT"].includes(code)) {
       const retry = document.createElement("button");
       retry.type = "button";
       retry.className = "demo-result-action";
-      retry.textContent = "Opnieuw proberen";
+      retry.textContent = ComprI18n.translate("Try again");
       retry.addEventListener("click", () => handleFindCheaper(product));
       elements.cheaperResults.appendChild(retry);
     }
@@ -692,7 +776,7 @@ async function handleFindCheaper(product) {
       copy.textContent = "Join free for launch updates. The first 1,000 eligible paid activations receive discounted Founding pricing; joining does not reserve a place.";
       const plans = document.createElement("div");
       for (const plan of [{ id: "pro", name: "COMPR Pro", detail: "15 searches / month" },
-        { id: "ultimate", name: "COMPR Ultimate", detail: "Unlimited searches" }]) {
+        { id: "ultimate", name: "COMPR Ultimate", detail: "50 searches / month" }]) {
         const button = document.createElement("button");
         button.type = "button";
         button.className = plan.id === "ultimate" ? "is-primary" : "";
@@ -722,9 +806,28 @@ async function handleFindCheaper(product) {
   }
 }
 
+function prepareFindCheaper(product) {
+  pendingFindProduct = product;
+  renderCheaperCurrentProduct(product);
+  renderSavingsHero(null, product);
+  elements.cheaperDialogSubtitle.textContent = ComprI18n.translate("Ready for a reliable price check");
+  elements.cheaperStatus.textContent = ComprI18n.translate("Start when you want COMPR to search for the same product at a reliable retailer.");
+  elements.cheaperQuery.textContent = product.name || "—";
+  elements.cheaperWebSearch.removeAttribute("href");
+  elements.cheaperBroadSearch.removeAttribute("href");
+  elements.cheaperResults.replaceChildren();
+  elements.cheaperSignIn.classList.add("hidden");
+  elements.cheaperStart.classList.remove("hidden");
+  if (typeof elements.cheaperDialog.showModal === "function") elements.cheaperDialog.showModal();
+  else elements.cheaperDialog.setAttribute("open", "");
+  elements.cheaperStart.focus();
+}
+
 function closeCheaperDialog() {
   searchAction.cancel();
   setSearchButtonsDisabled(false);
+  pendingFindProduct = null;
+  elements.cheaperStart.classList.add("hidden");
   if (typeof elements.cheaperDialog.close === "function") {
     elements.cheaperDialog.close();
   } else {
@@ -786,6 +889,11 @@ async function importProducts(file) {
 
 elements.clearButton.addEventListener("click", handleClearAll);
 elements.cheaperDialogClose.addEventListener("click", closeCheaperDialog);
+elements.cheaperStart.addEventListener("click", () => {
+  const product = pendingFindProduct;
+  pendingFindProduct = null;
+  if (product) handleFindCheaper(product);
+});
 elements.cheaperSignIn.addEventListener("click", async () => {
   try {
     await ComprAccountRoute.open();
@@ -813,14 +921,16 @@ elements.availableOnly.addEventListener("change", renderProducts);
 elements.countrySelect.addEventListener("change", async () => {
   countryCode = elements.countrySelect.value;
   currencyCode = ComprCurrency.getCurrencyForCountry(countryCode);
-  await ComprBrowser.storage.local.set({ countryCode });
+  await ComprBrowser.storage.local.set({ countryCode, countryChosenManually: true });
   renderProducts();
 });
 
-ComprBrowser.storage.local.get(["preferredSize", "countryCode"]).then(async data => {
+ComprBrowser.storage.local.get(["preferredSize", "countryCode", "countryChosenManually"]).then(async data => {
   elements.sizeFilter.value = String(data.preferredSize || "");
-  countryCode = data.countryCode || "NL";
+  const storedCountryIsValid = ComprCurrency.COUNTRIES.some(country => country.code === data.countryCode);
+  countryCode = data.countryChosenManually && storedCountryIsValid ? data.countryCode : inferCountryCode();
   currencyCode = ComprCurrency.getCurrencyForCountry(countryCode);
+  if (!data.countryChosenManually) await ComprBrowser.storage.local.set({ countryCode });
   populateCountrySelect();
   exchangeRates = await requestExchangeRates();
   ComprStorage.migrateStorage().then(loadProducts);

@@ -18,6 +18,7 @@ function formatPrice(value, currency) {
   }
 
   const cleanValue = String(value).trim();
+  if (typeof ComprLocaleParsing !== "undefined" && ComprLocaleParsing.parseAmount(cleanValue) === null) return null;
 
   if (normalizeCurrency(null, cleanValue)) {
     return cleanValue;
@@ -35,10 +36,8 @@ function getPriceFromJsonLd(product) {
     : [product.offers];
 
   for (const offer of offers) {
-    const price =
-      offer?.price ??
-      offer?.lowPrice ??
-      offer?.highPrice;
+    if (String(offer?.["@type"] || "").includes("AggregateOffer")) continue;
+    const price = offer?.price;
 
     if (price !== undefined && price !== null) {
       return formatPrice(
@@ -88,9 +87,9 @@ function getPriceFromDataElement() {
 
     if (!value) continue;
 
-    const number = parseFloat(value);
+    const number = typeof ComprLocaleParsing !== "undefined" ? ComprLocaleParsing.parseAmount(value) : Number(value);
 
-    if (Number.isNaN(number)) continue;
+    if (number === null || Number.isNaN(number)) continue;
     if (number < 1 || number > 10000) continue;
 
     const currency =
@@ -134,7 +133,7 @@ function getPriceFromDescription() {
 }
 
 function findPriceInText(text) {
-  const number = String.raw`\d+(?:[\s.,]\d{3})*(?:[.,]\d{1,2})?`;
+  const number = String.raw`(?:\d{1,3}(?:[.,\s]\d{3})+(?:[.,]\s*\d{2})?|\d+(?:[.,]\s*\d{2})?)`;
   const prefix = new RegExp(String.raw`(?:€|\$|£|¥|₣|EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|PLN|SEK|NOK|DKK|CZK|HUF|RON)\s*${number}`, "i");
   const suffix = new RegExp(String.raw`${number}\s*(?:€|\$|£|¥|₣|EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|PLN|SEK|NOK|DKK|CZK|HUF|RON|kr|zł|Kč|Ft|lei)(?![A-Za-z])`, "i");
   return String(text || "").match(prefix)?.[0] || String(text || "").match(suffix)?.[0] || null;

@@ -8,6 +8,7 @@ const ComprRuntimeConfig = Object.freeze({
   betaMode: true,
   betaAccessUrl: "https://comprshop.github.io/compr-website/#beta-access",
   storeReviewUrl: "https://chromewebstore.google.com/detail/compr/opgdgckljdepjokbbdgahhbocdlkggkj/reviews",
+  appStoreReviewUrl: "",
   platform: "chrome",
   guestMode: false
 });

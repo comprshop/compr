@@ -26,7 +26,7 @@ test("visible product copy is concrete rather than generic marketing copy", () =
   assert.match(popupHtml, />Compare before you buy\.<\/p>/);
   assert.match(popupHtml, />COMPR account<\/span>/);
   assert.doesNotMatch(popupHtml, />Shop smarter\.<\/p>/);
-  assert.match(compareHtml, /Saved product comparison/);
-  assert.match(compareHtml, />\s*Price check\s*</);
-  assert.match(compareHtml, />Saved products at a glance\.</);
+  assert.match(compareHtml, />\s*Saved products\s*</);
+  assert.doesNotMatch(compareHtml, /class="coming-feature"/);
+  assert.match(compareCss, /\.insights,[\s\S]*\.currency-note \{ display:none; \}/);
 });

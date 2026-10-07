@@ -11,7 +11,7 @@ document.getElementById("verify").addEventListener("click", async () => {
   status.textContent = "Inloggen…";
   try {
     const me = await ComprApi.me();
-    status.textContent = `Ingelogd\nPlan: ${me.plan}\nResterende zoekopdrachten: ${me.usage?.remaining ?? "onbeperkt"}`;
+    status.textContent = `Ingelogd\nPlan: ${me.plan}\nResterende zoekopdrachten: ${me.usage?.remaining ?? "onbekend"}`;
   } catch (error) { status.textContent = `Fout (${error.code || "AUTH"}): ${error.message}`; }
 });
 

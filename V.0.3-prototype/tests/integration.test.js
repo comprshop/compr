@@ -10,13 +10,17 @@ const Reliability = require("../shared/reliability.js");
 
 function storageHarness(seed = {}) {
   const values = structuredClone(seed);
+  const nativeMessages = [];
   const local = {
     get(keys, callback) { const list = Array.isArray(keys) ? keys : [keys]; const result = Object.fromEntries(list.map(key => [key, values[key]])); if (callback) callback(result); else return Promise.resolve(result); },
     set(update, callback) { Object.assign(values, structuredClone(update)); if (callback) callback(); else return Promise.resolve(); },
     remove(keys, callback) { for (const key of Array.isArray(keys) ? keys : [keys]) delete values[key]; if (callback) callback(); else return Promise.resolve(); },
     clear(callback) { for (const key of Object.keys(values)) delete values[key]; callback?.(); }
   };
-  return { values, chrome: { storage: { local }, runtime: { lastError: null } } };
+  return { values, nativeMessages, chrome: { storage: { local }, runtime: {
+    lastError: null,
+    sendNativeMessage(_applicationId, message, callback) { nativeMessages.push(message); callback?.(null); }
+  } } };
 }
 
 function loadAuth(harness, fetchImpl, config = {}) {
@@ -25,7 +29,7 @@ function loadAuth(harness, fetchImpl, config = {}) {
   const context = { chrome: harness.chrome, fetch: fetchImpl, ComprRuntimeConfig: {
     apiBaseUrl: "https://api.compr.test", supabaseUrl: "https://project.supabase.co", supabaseAnonKey: "public-anon", authCallbackUrl: "https://compr.example/auth",
     platform: "chrome", guestMode: false, ...config
-  }, URL, Date, Math, JSON, Error, Promise, encodeURIComponent };
+  }, URL, Date, Math, JSON, Error, Promise, AbortController, setTimeout, clearTimeout, encodeURIComponent };
   vm.createContext(context);
   vm.runInContext(`${adapterSource}\n${source}\nglobalThis.exposedAuth = ComprAuth;`, context);
   return context.exposedAuth;
@@ -58,10 +62,27 @@ test("failed refresh clears the invalid session", async () => {
   assert.equal(harness.values.comprAuthSession, undefined);
 });
 
+test("failed Safari refresh also clears the invalid native shared session", async () => {
+  const harness = storageHarness({ comprAuthSession: { access_token: "old", refresh_token: "bad", expires_at: 1 } });
+  const auth = loadAuth(harness, async () => response({ message: "expired" }, 401), { platform: "safari" });
+  await assert.rejects(auth.getSession(), error => error.code === "AUTH_REQUIRED");
+  assert.equal(harness.values.comprAuthSession, undefined);
+  assert.equal(harness.nativeMessages.at(-1)?.action, "auth.clear");
+});
+
 test("session survives extension context or service-worker restart", async () => {
   const harness = storageHarness({ comprAuthSession: { access_token: "saved", refresh_token: "refresh", expires_at: Math.floor(Date.now()/1000)+600 } });
   const restartedAuth = loadAuth(harness, async () => { throw new Error("network must not be needed"); });
   assert.equal((await restartedAuth.getSession()).access_token, "saved");
+});
+
+test("Safari logout clears local and native sessions and returns to logged out", async () => {
+  const harness = storageHarness({ comprAuthSession: { access_token: "saved", refresh_token: "refresh", expires_at: Math.floor(Date.now()/1000)+600 } });
+  const auth = loadAuth(harness, async () => response({}), { platform: "safari" });
+  await auth.signOut();
+  assert.equal(harness.values.comprAuthSession, undefined);
+  assert.equal(harness.nativeMessages.at(-1)?.action, "auth.clear");
+  assert.equal(await auth.getSession(), null);
 });
 
 test("Safari guest initialization is invisible, shared by concurrent callers and restorable", async () => {

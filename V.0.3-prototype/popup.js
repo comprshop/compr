@@ -1,7 +1,7 @@
 if (!globalThis.__comprPopupBootstrapRegistered) {
 globalThis.__comprPopupBootstrapRegistered = true;
 document.addEventListener("DOMContentLoaded", async () => {
-  if (ComprRuntimeConfig.platform === "safari" && ComprRuntimeConfig.guestMode === true) {
+  if (ComprRuntimeConfig.platform === "safari") {
     await globalThis.ComprSafariPopup.start();
     return;
   }
@@ -9,6 +9,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const loadingState = document.getElementById("loadingState");
   const productState = document.getElementById("productState");
   const emptyState = document.getElementById("emptyState");
+  const emptyTitle = document.getElementById("emptyTitle");
+  const emptyDescription = document.getElementById("emptyDescription");
+  const emptyStepOne = document.getElementById("emptyStepOne");
+  const emptyStepTwo = document.getElementById("emptyStepTwo");
+  const emptyStepThree = document.getElementById("emptyStepThree");
 
   const productImage = document.getElementById("productImage");
   const productBrand = document.getElementById("productBrand");
@@ -55,6 +60,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const accountDelete = document.getElementById("accountDelete");
   const accountSessionActions = document.getElementById("accountSessionActions");
   const chromeStoreReview = document.getElementById("chromeStoreReview");
+  const appStoreReview = document.getElementById("appStoreReview");
 
   let currentProduct = null;
   let currentProductIsSaved = false;
@@ -67,6 +73,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function requestExchangeRates() {
     return ComprCurrency.requestExchangeRates();
+  }
+
+  function t(value) {
+    return ComprI18n.translate(value);
+  }
+
+  function tf(value, replacements) {
+    return ComprI18n.format(value, replacements);
   }
 
   function on(element, eventName, handler) {
@@ -87,20 +101,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       const remaining = me.usage?.remaining;
       const mode = String(me.usage?.mode || "");
       accountUsage.textContent = remaining === null || remaining === undefined
-        ? "Unlimited searches"
+        ? t("Usage unavailable")
         : isSafariGuest
-        ? `${remaining} of ${me.usage.limit} free checks remaining`
+        ? tf("{remaining} of {limit} free checks remaining", { remaining, limit: me.usage.limit })
         : mode === "intro"
-        ? `${remaining} of ${me.usage.limit} free searches remaining`
-        : `${remaining} of ${me.usage.limit} searches remaining`;
+        ? tf("{remaining} of {limit} free searches remaining", { remaining, limit: me.usage.limit })
+        : tf("{remaining} of {limit} searches remaining", { remaining, limit: me.usage.limit });
       const details = [];
       if (me.foundingMember && me.foundingMemberNumber) {
-        details.push(`Founding member #${me.foundingMemberNumber}`);
+        details.push(tf("Founding member #{number}", { number: me.foundingMemberNumber }));
       }
       if (me.billing?.periodEnd && plan !== "free") {
-        const date = new Intl.DateTimeFormat("nl-NL", { day: "numeric", month: "long", year: "numeric" })
+        const date = new Intl.DateTimeFormat(ComprI18n.getLanguage(), { day: "numeric", month: "long", year: "numeric" })
           .format(new Date(me.billing.periodEnd));
-        details.push(me.billing.cancelAtPeriodEnd ? `Access ends ${date}` : `Renews ${date}`);
+        details.push(me.billing.cancelAtPeriodEnd ? tf("Access ends {date}", { date }) : tf("Renews {date}", { date }));
       }
       accountDetails.textContent = details.join(" · ");
       accountBadge.textContent = isSafariGuest ? "BETA" : me.foundingMember ? "FOUNDING" : (plan === "free" ? "FREE" : "ACTIEF");
@@ -114,7 +128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       manageBilling.classList.toggle("hidden", isSafariGuest || plan === "free");
       accountSessionActions.classList.remove("hidden");
       accountSignOut.classList.toggle("hidden", isSafariGuest);
-      accountDelete.textContent = isSafariGuest ? "Clear Safari beta data" : "Delete account";
+      accountDelete.textContent = isSafariGuest ? "Clear Safari beta data" : t("Delete account");
       accountOpen.classList.add("hidden");
       if (!renderController.isCurrent("account-load", generation)) return;
       billingStatus.textContent = "";
@@ -238,16 +252,46 @@ document.addEventListener("DOMContentLoaded", async () => {
       billingStatus.textContent = "Founding Access opened. Joining is free and does not reserve a place.";
       return;
     }
+    if (ComprRuntimeConfig.platform === "safari") {
+      const buttons = [...upgradeOptions.querySelectorAll("button")];
+      buttons.forEach(item => { item.disabled = true; });
+      billingStatus.textContent = t("Opening the App Store…");
+      try {
+        const me = await ComprApi.me();
+        if (!me?.user?.id || me?.guest === true) {
+          const error = new Error("Authentication required"); error.code = "AUTH_REQUIRED"; throw error;
+        }
+        const productId = plan === "monthly"
+          ? ComprAppleBilling.PRODUCT_IDS.proMonthly
+          : ComprAppleBilling.PRODUCT_IDS.proYearly;
+        const purchase = await ComprAppleBilling.purchase(productId, me.user.id);
+        if (purchase.status === "cancelled") billingStatus.textContent = t("Purchase cancelled.");
+        else if (purchase.status === "pending") billingStatus.textContent = t("Purchase pending approval.");
+        else {
+          await ComprApi.syncAppleTransaction(purchase.signedTransactionInfo);
+          await ComprAppleBilling.finish(purchase.transactionId);
+          billingStatus.textContent = t("Your COMPR Pro subscription is active.");
+          await loadAccount();
+        }
+      } catch (error) {
+        billingStatus.textContent = error?.code === "AUTH_REQUIRED"
+          ? t("Sign in to continue with COMPR Pro.")
+          : t("We couldn't complete the App Store request.");
+      } finally {
+        buttons.forEach(item => { item.disabled = false; });
+      }
+      return;
+    }
     const buttons = [...upgradeOptions.querySelectorAll("button")];
     buttons.forEach(item => { item.disabled = true; });
-    billingStatus.textContent = "Beveiligde betaalpagina openen…";
+    billingStatus.textContent = t("Opening secure checkout…");
     try {
       const checkout = await ComprApi.createCheckout(plan);
       if (!checkout?.url || !/^https:\/\/checkout\.stripe\.com\//.test(checkout.url)) {
         throw new Error("Ongeldige betaalpagina ontvangen");
       }
       await ComprBrowser.tabs.openExternal(checkout.url);
-      billingStatus.textContent = "Rond de testbetaling af in het nieuwe tabblad.";
+      billingStatus.textContent = t("Complete the payment in the new tab.");
     } catch (error) {
       billingStatus.textContent = friendlyAccountError(error);
     } finally {
@@ -255,16 +299,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  async function restoreApplePurchases() {
+    if (ComprRuntimeConfig.platform !== "safari") return;
+    billingStatus.textContent = t("Restoring purchases…");
+    try {
+      const me = await ComprApi.me();
+      if (!me?.user?.id || me?.guest === true) {
+        const error = new Error("Authentication required"); error.code = "AUTH_REQUIRED"; throw error;
+      }
+      const restored = await ComprAppleBilling.restore();
+      if (!restored.length) {
+        billingStatus.textContent = t("No purchases were found for this Apple Account.");
+        return;
+      }
+      for (const purchase of restored) {
+        await ComprApi.syncAppleTransaction(purchase.signedTransactionInfo);
+        await ComprAppleBilling.finish(purchase.transactionId);
+      }
+      billingStatus.textContent = t("Your COMPR subscription is active.");
+      await loadAccount();
+    } catch (error) {
+      billingStatus.textContent = error?.code === "AUTH_REQUIRED"
+        ? t("Sign in to restore purchases.")
+        : t("We couldn't complete the App Store request.");
+    }
+  }
+
   async function openBillingPortal() {
+    if (ComprRuntimeConfig.platform === "safari") {
+      await ComprBrowser.tabs.openExternal("https://apps.apple.com/account/subscriptions");
+      billingStatus.textContent = t("Manage your Apple subscription in the App Store.");
+      return;
+    }
     manageBilling.disabled = true;
-    billingStatus.textContent = "Beveiligd klantenportaal openen…";
+    billingStatus.textContent = t("Opening secure billing portal…");
     try {
       const portal = await ComprApi.createBillingPortal();
       if (!portal?.url || !/^https:\/\/billing\.stripe\.com\//.test(portal.url)) {
         throw new Error("Ongeldig klantenportaal ontvangen");
       }
       await ComprBrowser.tabs.openExternal(portal.url);
-      billingStatus.textContent = "Stripe-klantenportaal geopend.";
+      billingStatus.textContent = t("Stripe billing portal opened.");
     } catch (error) {
       billingStatus.textContent = friendlyAccountError(error);
     } finally {
@@ -286,6 +361,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function countryFlag(code) {
     return String(code).toUpperCase().replace(/./g, character => String.fromCodePoint(127397 + character.charCodeAt(0)));
+  }
+
+  function inferCountryCode() {
+    const supported = new Set(ComprCurrency.COUNTRIES.map(country => country.code));
+    let locale;
+    try { locale = new Intl.Locale(navigator.language || "en"); } catch { locale = { language: "en", region: "" }; }
+    const region = String(locale.region || "").toUpperCase();
+    if (supported.has(region)) return region;
+    let timeZone = "";
+    try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch {}
+    const timeZoneCountry = {
+      "Europe/Amsterdam":"NL", "Europe/Brussels":"BE", "Europe/Berlin":"DE", "Europe/Paris":"FR",
+      "Europe/Madrid":"ES", "Europe/Rome":"IT", "Europe/Dublin":"IE", "Europe/Vienna":"AT",
+      "Europe/Lisbon":"PT", "Europe/London":"GB", "Europe/Zurich":"CH", "Europe/Warsaw":"PL",
+      "Europe/Stockholm":"SE", "Europe/Oslo":"NO", "Europe/Copenhagen":"DK", "Europe/Prague":"CZ",
+      "Europe/Budapest":"HU", "Europe/Bucharest":"RO", "America/Toronto":"CA", "Australia/Sydney":"AU",
+      "Pacific/Auckland":"NZ", "Asia/Tokyo":"JP"
+    }[timeZone];
+    if (timeZoneCountry) return timeZoneCountry;
+    return locale.language === "de" ? "DE" : locale.language === "fr" ? "FR" : locale.language === "nl" ? "NL" : "US";
   }
 
   function enhanceCountrySelect(select) {
@@ -398,6 +493,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  function showProductHelp(reason = "product-page") {
+    const permissionRequired = reason === "permission";
+    emptyState.dataset.reason = reason;
+    emptyTitle.textContent = permissionRequired ? "Allow COMPR on this website" : "Open one specific product";
+    emptyDescription.textContent = permissionRequired
+      ? "Safari needs permission before COMPR can recognise the product on this page."
+      : "COMPR recognises individual product pages with a visible product name and price.";
+    emptyStepOne.textContent = permissionRequired
+      ? "Open Page Menu in Safari"
+      : "Open the product at a webshop";
+    emptyStepTwo.textContent = permissionRequired
+      ? "Tap Manage Extensions and choose COMPR"
+      : "Wait until its name and price are visible";
+    emptyStepThree.textContent = permissionRequired
+      ? "Allow this website, then open COMPR again"
+      : "Open COMPR from the Safari menu";
+    ComprI18n.apply(emptyState);
+    showState(emptyState);
+  }
+
   function isUsableProduct(product) {
     return ComprProductEligibility.isEligibleProductPayload(product);
   }
@@ -426,11 +541,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderSimilarWarning(products);
 
     if (currentProductIsSaved) {
-      saveButton.textContent = "Saved — remove";
+      saveButton.textContent = t("Saved — remove");
       saveButton.setAttribute("aria-label", "Remove this product from COMPR");
       saveButton.classList.add("is-saved");
     } else {
-      saveButton.textContent = "Save & Compare";
+      saveButton.textContent = t("Save & Compare");
       saveButton.setAttribute("aria-label", "Save this product to COMPR");
       saveButton.classList.remove("is-saved");
     }
@@ -503,10 +618,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       formatStore(product.webshop);
 
     const availabilityLabels = {
-      in_stock: "In stock when checked",
-      preorder: "Available for pre-order",
-      out_of_stock: "Out of stock when checked",
-      unknown: "Availability not confirmed"
+      in_stock: t("In stock when checked"),
+      preorder: t("Available for pre-order"),
+      out_of_stock: t("Out of stock when checked"),
+      unknown: t("Availability not confirmed")
     };
     const availableSizes = Array.isArray(product.availableSizes) ? product.availableSizes : [];
     const unavailableSizes = Array.isArray(product.unavailableSizes) ? product.unavailableSizes : [];
@@ -524,7 +639,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (trustpilotUrl) {
       trustpilotLink.href = trustpilotUrl;
       const domain = ComprProduct.getStoreDomain(product);
-      trustpilotLink.textContent = `Store reviews · ${domain.replace(/^www\./, "")}`;
+      trustpilotLink.textContent = `${t("Store reviews")} · ${domain.replace(/^www\./, "")}`;
       trustpilotLink.classList.remove("hidden");
     } else {
       trustpilotLink.classList.add("hidden");
@@ -601,9 +716,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (reviewUrl) ComprBrowser.tabs.openExternal(reviewUrl).catch(() => showToast("Couldn't open the store page."));
   }
 
+  function getAppStoreReviewUrl() {
+    if (ComprRuntimeConfig.platform !== "safari" || !ComprRuntimeConfig.appStoreReviewUrl) return "";
+    try {
+      const url = new URL(ComprRuntimeConfig.appStoreReviewUrl);
+      return url.protocol === "https:" && url.hostname === "apps.apple.com" &&
+        url.pathname.includes("/app/") && url.searchParams.get("action") === "write-review" ? url.href : "";
+    } catch { return ""; }
+  }
+
+  function configureAppStoreReview() {
+    if (!appStoreReview) return;
+    const reviewUrl = getAppStoreReviewUrl();
+    appStoreReview.classList.toggle("hidden", !reviewUrl);
+    appStoreReview.disabled = !reviewUrl;
+    appStoreReview.setAttribute("aria-hidden", String(!reviewUrl));
+  }
+
+  function openAppStoreReview() {
+    const reviewUrl = getAppStoreReviewUrl();
+    if (reviewUrl) ComprBrowser.tabs.openExternal(reviewUrl).catch(() => showToast(t("Couldn't open the App Store page.")));
+  }
+
   async function openFindThisCheaper() {
     if (currentProduct && !currentProductIsSaved) {
       await saveCurrentProduct();
+    }
+    const identity = ComprProduct.getProductIdentity(currentProduct);
+    if (identity) {
+      await ComprBrowser.storage.local.set({
+        pendingFindCheaperIdentity: identity,
+        pendingFindCheaperAt: Date.now()
+      });
     }
     openComparePage();
   }
@@ -619,7 +763,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!tab?.id) {
         if (!renderController.isCurrent("product-detection", generation)) return;
-        showState(emptyState);
+        showProductHelp("product-page");
         return;
       }
 
@@ -639,7 +783,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         target: { tabId: tab.id },
         files: [
           "shared/productEligibility.js",
-          "detectors/price.js",
+          "shared/localeParsing.js", "detectors/price.js",
           "detectors/brand.js",
           "detectors/color.js",
           "detectors/material.js",
@@ -665,7 +809,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!renderController.isCurrent("product-detection", generation)) return;
 
       if (!isUsableProduct(response)) {
-        showState(emptyState);
+        showProductHelp("product-page");
         return;
       }
 
@@ -673,9 +817,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
       if (!renderController.isCurrent("product-detection", generation)) return;
       if (error?.capability === "scripting.executeScript" || error?.capability === "tabs.query") {
-        showToast("Allow COMPR on this website, then reopen COMPR to try again.");
+        showProductHelp("permission");
+        return;
       }
-      showState(emptyState);
+      showProductHelp("product-page");
     }
   }
 
@@ -709,7 +854,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   on(countrySelect, "change", async () => {
     countryCode = countrySelect.value;
     currencyCode = ComprCurrency.getCurrencyForCountry(countryCode);
-    await ComprBrowser.storage.local.set({ countryCode });
+    await ComprBrowser.storage.local.set({ countryCode, countryChosenManually: true });
     if (currentProduct) {
       renderConvertedPrice(currentProduct);
       await updateSaveButton();
@@ -726,17 +871,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   on(accountSignOut, "click", signOutAccount);
   on(accountDelete, "click", deleteAccount);
   on(chromeStoreReview, "click", openChromeStoreReview);
+  on(appStoreReview, "click", openAppStoreReview);
+  configureAppStoreReview();
   upgradeOptions.querySelectorAll("[data-checkout-plan]").forEach(button => {
     on(button, "click", () => startCheckout(button));
   });
+  on(document.getElementById("restoreApplePurchases"), "click", restoreApplePurchases);
 
   /*
     Als je een product via de compare-pagina verwijdert
     terwijl de popup later opnieuw opent, wordt de knop
     opnieuw berekend uit savedProducts.
   */
-  const settings = await ComprBrowser.storage.local.get(["countryCode"]);
-  countryCode = settings.countryCode || "NL";
+  const settings = await ComprBrowser.storage.local.get(["countryCode", "countryChosenManually"]);
+  const storedCountryIsValid = ComprCurrency.COUNTRIES.some(country => country.code === settings.countryCode);
+  countryCode = settings.countryChosenManually && storedCountryIsValid ? settings.countryCode : inferCountryCode();
+  if (!settings.countryChosenManually) await ComprBrowser.storage.local.set({ countryCode });
   currencyCode = ComprCurrency.getCurrencyForCountry(countryCode);
   populateCountrySelect();
   exchangeRates = await requestExchangeRates();

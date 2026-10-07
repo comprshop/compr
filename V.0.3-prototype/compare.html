@@ -27,11 +27,12 @@
 
         <div class="brand-row">
 
-          <img
-            src="icons/icon48.png"
-            alt="COMPR"
-            class="header-logo"
-          >
+          <span class="header-logo" role="img" aria-label="COMPR">
+            <svg viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M34 12.5a15 15 0 1 0 0 23" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+              <path d="M15.5 24h17M15.5 24l4-4M15.5 24l4 4M32.5 24l-4-4M32.5 24l-4 4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
 
           <div>
 
@@ -81,6 +82,28 @@
 
     </header>
 
+    <!-- INTRO -->
+    <section class="comparison-intro">
+
+      <div class="intro-copy">
+
+        <span class="eyebrow">
+          Your collection
+        </span>
+
+        <h2>
+          Saved products
+        </h2>
+
+        <p>
+          Compare what you saved or check a product for a better price.
+        </p>
+
+      </div>
+
+
+    </section>
+
     <section id="overviewAccount" class="overview-account" aria-live="polite">
       <div class="overview-account-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24"><path d="M12 3 4.5 7.2v5.5c0 4.1 3.1 7 7.5 8.3 4.4-1.3 7.5-4.2 7.5-8.3V7.2L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.7 12 2.1 2.1 4.6-4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -100,61 +123,6 @@
       <button id="overviewManage" class="overview-manage hidden" type="button">Manage subscription</button>
       <button id="overviewSignIn" class="overview-sign-in hidden" type="button">Sign in</button>
       <button id="overviewRefresh" class="overview-refresh" type="button" aria-label="Refresh account">Refresh</button>
-    </section>
-
-    <!-- INTRO -->
-    <section class="comparison-intro">
-
-      <div class="intro-copy">
-
-        <span class="eyebrow">
-          Saved product comparison
-        </span>
-
-        <h2>
-          Compare products
-        </h2>
-
-        <p>
-          See prices clearly, spot important differences and find a better deal.
-        </p>
-
-      </div>
-
-
-      <!-- PRICE CHECK -->
-      <div class="coming-feature">
-
-        <span class="coming-soon">
-          Price check
-        </span>
-
-        <div class="coming-feature-content">
-
-          <div>
-
-            <h3>
-              Find This Cheaper
-            </h3>
-
-            <p>
-              Search for the exact same product at a better price.
-            </p>
-
-            <p class="data-disclosure">
-              Starting a price check sends the selected product's details and page URL to COMPR's secure backend and search provider. <a href="https://getcompr.nl/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a>
-            </p>
-
-          </div>
-
-          <span class="search-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </span>
-
-        </div>
-
-      </div>
-
     </section>
 
     <section class="insights" aria-label="Collection overview">
@@ -277,6 +245,7 @@
   <!-- SHARED CORE -->
   <script src="shared/browserAdapter.js"></script>
   <script src="shared/accountRoute.js"></script>
+  <script src="shared/localeParsing.js"></script>
   <script src="shared/product.js"></script>
   <script src="shared/currency.js"></script>
   <script src="shared/storage.js"></script>
@@ -329,6 +298,7 @@
       </details>
 
       <div id="cheaperStatus" class="cheaper-status" role="status" aria-live="polite"></div>
+      <button id="cheaperStart" class="demo-result-action hidden" type="button">Start price check</button>
       <button id="cheaperSignIn" class="demo-result-action hidden" type="button">Sign in</button>
       <section id="cheaperResults" class="cheaper-results" aria-label="Matching retailer offers"></section>
 

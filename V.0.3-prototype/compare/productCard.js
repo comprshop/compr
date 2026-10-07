@@ -33,7 +33,7 @@ function createDetailRow(label, value) {
   labelElement.className =
     "detail-label";
 
-  labelElement.textContent = label;
+  labelElement.textContent = couponCopy(label);
 
   const valueElement =
     document.createElement("span");
@@ -42,7 +42,7 @@ function createDetailRow(label, value) {
     "detail-value";
 
   valueElement.textContent =
-    value || "Not found";
+    couponCopy(value || "Not found");
 
   row.append(
     labelElement,
@@ -56,7 +56,7 @@ function createDetailsSection(title) {
   const section = document.createElement("details");
   section.className = "details-section";
   const summary = document.createElement("summary");
-  summary.textContent = title;
+  summary.textContent = couponCopy(title);
   const body = document.createElement("div");
   body.className = "details-section-body";
   section.append(summary, body);
@@ -123,24 +123,27 @@ function createDiscountCodeCard(promotion) {
 }
 
 function formatAvailabilityAge(timestamp) {
-  if (!timestamp) return "Not checked yet";
+  const language = globalThis.ComprI18n?.getLanguage?.() || "en";
+  if (!timestamp) return couponCopy("Not checked yet");
   const minutes = Math.max(0, Math.floor((Date.now() - Number(timestamp)) / 60000));
-  if (minutes < 1) return "Checked just now";
-  if (minutes < 60) return `Checked ${minutes}m ago`;
+  if (minutes < 1) return couponCopy("Checked just now");
+  if (minutes < 60) return language === "nl" ? `${minutes} min geleden gecontroleerd` : language === "de" ? `Vor ${minutes} Min. geprüft` : language === "fr" ? `Vérifié il y a ${minutes} min` : `Checked ${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Checked ${hours}h ago`;
-  return `Checked ${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return language === "nl" ? `${hours} uur geleden gecontroleerd` : language === "de" ? `Vor ${hours} Std. geprüft` : language === "fr" ? `Vérifié il y a ${hours} h` : `Checked ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return language === "nl" ? `${days} dagen geleden gecontroleerd` : language === "de" ? `Vor ${days} Tagen geprüft` : language === "fr" ? `Vérifié il y a ${days} j` : `Checked ${days}d ago`;
 }
 
 function getAvailabilityLabel(product) {
   const sizes = Array.isArray(product.availableSizes) ? product.availableSizes : [];
-  if (sizes.length) return `${sizes.length} sizes available`;
-  return ({
+  const language = globalThis.ComprI18n?.getLanguage?.() || "en";
+  if (sizes.length) return language === "nl" ? `${sizes.length} maten beschikbaar` : language === "de" ? `${sizes.length} Größen verfügbar` : language === "fr" ? `${sizes.length} tailles disponibles` : `${sizes.length} sizes available`;
+  return couponCopy(({
     in_stock: "In stock",
     preorder: "Pre-order",
     out_of_stock: "Out of stock",
     unknown: "Availability unknown"
-  })[product.availabilityStatus] || "Availability unknown";
+  })[product.availabilityStatus] || "Availability unknown");
 }
 
 function isTechCategory(category) {
@@ -237,12 +240,12 @@ function createProductCard(
     image.addEventListener("error", () => {
       image.hidden = true;
       imageWrapper.classList.add("missing-image");
-      imageWrapper.setAttribute("aria-label", "Image not available");
+      imageWrapper.setAttribute("aria-label", couponCopy("Image not available"));
     }, { once: true });
   } else {
     image.hidden = true;
     imageWrapper.classList.add("missing-image");
-    imageWrapper.setAttribute("aria-label", "Image not available");
+    imageWrapper.setAttribute("aria-label", couponCopy("Image not available"));
   }
 
   imageWrapper.appendChild(image);
@@ -259,7 +262,7 @@ function createProductCard(
     product.brand &&
     product.brand !== "Merk niet gevonden"
       ? product.brand
-      : "Unknown brand";
+      : couponCopy("Unknown brand");
 
   const name =
     document.createElement("h2");
@@ -268,7 +271,7 @@ function createProductCard(
 
   name.textContent =
     product.name ||
-    "Product name not found";
+    couponCopy("Product name not found");
 
   const price =
     document.createElement("p");
@@ -278,12 +281,12 @@ function createProductCard(
   price.textContent =
     product.convertedPrice ||
     product.price ||
-    "Price not found";
+    couponCopy("Price not found");
 
   const originalPrice = document.createElement("p");
   originalPrice.className = "original-price";
   if (product.convertedPrice && product.convertedCurrency !== product.sourceCurrency) {
-    originalPrice.textContent = `Original: ${product.price}`;
+    originalPrice.textContent = `${couponCopy("Original")}: ${product.price}`;
   } else {
     originalPrice.hidden = true;
   }
@@ -299,10 +302,10 @@ function createProductCard(
 
   if (!canCompare) {
     differenceText.textContent =
-      "Add another saved product in this category to compare prices";
+      couponCopy("Add another saved product in this category to compare prices");
   } else if (isCheapest) {
     differenceText.textContent =
-      "Lowest price among your saved products in this category";
+      couponCopy("Lowest price among your saved products in this category");
   } else if (
     productPrice !== null &&
     cheapestPrice !== null
@@ -459,7 +462,8 @@ function createProductCard(
   const findCheaperButton = document.createElement("button");
   findCheaperButton.className = "find-cheaper-button";
   findCheaperButton.type = "button";
-  findCheaperButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Find This Cheaper</span>';
+  findCheaperButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span></span>';
+  findCheaperButton.querySelector("span").textContent = couponCopy("Find This Cheaper");
   findCheaperButton.addEventListener("click", () => onFindCheaper(product));
 
   const viewButton =
@@ -474,7 +478,7 @@ function createProductCard(
   viewButton.target = "_blank";
   viewButton.rel = "noopener noreferrer";
 
-  viewButton.textContent = "View product";
+  viewButton.textContent = couponCopy("View product");
 
   if (!safeProductUrl) {
     viewButton.removeAttribute("href");
@@ -489,7 +493,7 @@ function createProductCard(
     "remove-button";
 
   removeButton.type = "button";
-  removeButton.textContent = "Remove";
+  removeButton.textContent = couponCopy("Remove");
 
   removeButton.addEventListener(
     "click",
@@ -504,7 +508,7 @@ function createProductCard(
   reviewsLink.href = reviewsUrl || "#";
   reviewsLink.target = "_blank";
   reviewsLink.rel = "noopener noreferrer";
-  reviewsLink.textContent = `Store reviews · ${cleanShop(product.webshop)}`;
+  reviewsLink.textContent = `${couponCopy("Store reviews")} · ${cleanShop(product.webshop)}`;
 
   if (!reviewsUrl) {
     reviewsLink.hidden = true;

@@ -16,13 +16,14 @@ const backgroundJs = fs.readFileSync(path.join(source, "background.js"), "utf8")
 const popupCss = fs.readFileSync(path.join(source, "styles", "popup.css"), "utf8");
 const compareCss = fs.readFileSync(path.join(source, "styles", "compare.css"), "utf8");
 const popupJs = fs.readFileSync(path.join(source, "popup.js"), "utf8");
+const compareJs = fs.readFileSync(path.join(source, "compare.js"), "utf8");
 const safariPopupJs = fs.readFileSync(path.join(source, "safari-popup.js"), "utf8");
 const authJs = fs.readFileSync(path.join(source, "shared", "auth.js"), "utf8");
 const runtimeConfig = fs.readFileSync(path.join(source, "shared", "runtimeConfig.js"), "utf8");
 
 test("Safari manifest is minimal MV3 and never requests permanent all-site access", () => {
   assert.equal(safariManifest.manifest_version, 3);
-  assert.deepEqual(safariManifest.permissions.sort(), ["activeTab", "scripting", "storage"]);
+  assert.deepEqual(safariManifest.permissions.sort(), ["activeTab", "nativeMessaging", "scripting", "storage"]);
   assert.equal(safariManifest.host_permissions.includes("<all_urls>"), false);
   assert.equal(safariManifest.host_permissions.some(value => /localhost|127\.0\.0\.1|^http:/.test(value)), false);
   assert.deepEqual(safariManifest.web_accessible_resources[0].matches, ["https://getcompr.nl/*"]);
@@ -66,6 +67,16 @@ test("mobile layouts include narrow viewport, safe areas, touch targets and long
   }
 });
 
+test("mobile region defaults select language, country and matching currency until manually changed", () => {
+  const i18n = fs.readFileSync(path.join(source, "shared", "i18n.js"), "utf8");
+  assert.match(i18n, /inferredLanguage/);
+  assert.match(i18n, /Europe\/Amsterdam/);
+  assert.match(i18n, /languageChosenManually/);
+  assert.match(popupJs, /function inferCountryCode\(\)/);
+  assert.match(popupJs, /countryChosenManually/);
+  assert.match(popupJs, /ComprCurrency\.getCurrencyForCountry\(countryCode\)/);
+});
+
 test("permission failure is distinct and product data is not sent during recognition", () => {
   assert.match(popupJs, /Allow COMPR on this website/);
   const recognition = popupJs.slice(popupJs.indexOf("async function getProductFromActiveTab"));
@@ -75,7 +86,16 @@ test("permission failure is distinct and product data is not sent during recogni
 test("Safari platform override does not invent an App Store destination", () => {
   const override = fs.readFileSync(path.join(root, "platforms", "safari", "platform.js"), "utf8");
   assert.match(override, /chromeStoreReview/);
+  assert.match(override, /classList\.remove\("chrome-popup"\)/);
+  assert.match(override, /classList\.add\("safari-popup"\)/);
+  assert.match(override, /chromeReview\.disabled = true/);
+  assert.match(override, /setAttribute\("aria-hidden", "true"\)/);
+  assert.match(override, /style\.setProperty\("display", "none", "important"\)/);
   assert.doesNotMatch(override, /apps\.apple\.com/);
+  assert.match(runtimeConfig, /appStoreReviewUrl:\s*""/);
+  assert.match(popupHtml, /id="appStoreReview"[^>]*class="app-store-review hidden"/);
+  assert.match(popupJs, /hostname === "apps\.apple\.com"[\s\S]*action"\) === "write-review"/);
+  assert.match(popupCss, /html\[data-compr-platform="safari"\][\s\S]*\.chrome-store-review\s*\{\s*display:none!important/);
 });
 
 test("Chrome and Safari production builds keep guest access disabled without browser sniffing", () => {
@@ -84,7 +104,11 @@ test("Chrome and Safari production builds keep guest access disabled without bro
   assert.match(authJs, /platform !== "safari" \|\| ComprRuntimeConfig\.guestMode !== true/);
   const build = fs.readFileSync(path.join(root, "tools", "build-safari-extension.ps1"), "utf8");
   assert.match(build, /platform:\s*`"safari`"/); assert.match(build, /guestMode: false/);
-  assert.match(popupJs, /isSafariGuest[\s\S]*ensureGuestSession/);
+  assert.match(popupJs, /ComprRuntimeConfig\.platform === "safari"[\s\S]*ComprSafariPopup\.start/);
+  assert.match(popupJs, /ComprAppleBilling\.purchase[\s\S]*syncAppleTransaction[\s\S]*ComprAppleBilling\.finish/);
+  assert.match(popupJs, /ComprAppleBilling\.restore/);
+  assert.match(safariPopupJs, /ComprAuth\.getSession\(\)[\s\S]*guestMode===true[\s\S]*ensureGuestSession/);
+  assert.match(popupHtml, /id="safariSignIn"[^>]*href="compr:\/\/signin"/);
   assert.match(popupJs, /accountOpen\.classList\.add\("hidden"\)/);
   assert.match(popupJs, /await ComprApi\.resetGuest\(\)[\s\S]*await ComprBrowser\.storage\.local\.clear\(\)/);
 });
@@ -92,6 +116,47 @@ test("Chrome and Safari production builds keep guest access disabled without bro
 test("Safari guest initialization uses Supabase Auth and never adds a client quota counter", () => {
   assert.match(authJs, /request\("\/signup", \{ method: "POST", body: "\{\}" \}\)/);
   assert.doesNotMatch(authJs, /guestUsage|guestQuota|deviceId|installationId/i);
+});
+
+test("Safari billing uses StoreKit while other platforms retain Stripe", () => {
+  assert.match(popupJs, /platform === "safari"[\s\S]*ComprAppleBilling\.purchase[\s\S]*return;[\s\S]*ComprApi\.createCheckout/);
+  assert.match(popupJs, /platform === "safari"[\s\S]*Manage your Apple subscription in the App Store\.[\s\S]*ComprApi\.createBillingPortal/);
+  assert.match(compareJs, /async function openSecureBilling[\s\S]*platform === "safari"[\s\S]*APPLE_BILLING_UNAVAILABLE[\s\S]*await createSession\(\)/);
+});
+
+test("Safari native billing bridge allowlists products and defers finish until server sync", () => {
+  const billing = fs.readFileSync(path.join(source, "shared", "appleBilling.js"), "utf8");
+  const handler = fs.readFileSync(path.join(root, "safari-mac-day-kit", "container-app", "SafariWebExtensionHandler.swift"), "utf8");
+  assert.match(popupHtml, /shared\/runtimeConfig\.js[\s\S]*shared\/appleBilling\.js[\s\S]*safari-popup\.js/);
+  assert.match(billing, /sendNativeMessage\(APP_ID, \{ action: "billing\.products" \}\)/);
+  assert.match(handler, /case "billing\.products"/);
+  assert.match(handler, /Product\.products\(for: productIDs\)/);
+  assert.match(handler, /product\.purchase\(options: \[\.appAccountToken\(accountToken\)\]\)/);
+  assert.match(handler, /AppStore\.sync\(\)/);assert.match(handler, /verification\.jwsRepresentation/);
+  assert.match(billing, /syncAndFinish|billing\.finish/);
+  assert.doesNotMatch(handler, /os_log|NSLog|print\(/);
+});
+
+test("generated Xcode configuration preserves native Apple auth and StoreKit bridges", () => {
+  const handler = fs.readFileSync(path.join(root, "safari-mac-day-kit", "container-app", "SafariWebExtensionHandler.swift"), "utf8");
+  const sceneDelegate = fs.readFileSync(path.join(root, "safari-mac-day-kit", "container-app", "SceneDelegate.swift"), "utf8");
+  const configure = fs.readFileSync(path.join(root, "safari-mac-day-kit", "configure-generated-xcode-project.sh"), "utf8");
+  for (const action of ["auth.openApp", "auth.session", "auth.clear", "billing.products", "billing.purchase", "billing.restore", "billing.finish"]) {
+    assert.match(handler, new RegExp(action.replace(".", "\\.")));
+    assert.match(configure, new RegExp(action.replace(".", "\\.")));
+  }
+  for (const productId of ["nl.getcompr.pro.monthly", "nl.getcompr.pro.yearly",
+    "nl.getcompr.ultimate.monthly", "nl.getcompr.ultimate.yearly"]) {
+    assert.match(handler, new RegExp(productId.replaceAll(".", "\\.")));
+    assert.match(configure, new RegExp(productId.replaceAll(".", "\\.")));
+  }
+  assert.match(handler, /group\.nl\.getcompr\.compr/);
+  assert.match(handler, /compr:\/\/signin/);
+  assert.match(sceneDelegate, /context\.url\.scheme == "compr" && context\.url\.host == "signin"/);
+  assert.match(configure, /cp "\$container_app\/SafariWebExtensionHandler\.swift" "\$extension_handler"/);
+  assert.match(configure, /cp "\$container_app\/SceneDelegate\.swift" "\$scene_delegate"/);
+  assert.match(configure, /com\.apple\.developer\.applesignin/);
+  assert.match(configure, /group\.nl\.getcompr\.compr/);
 });
 
 test("build exposes exclusive validation and staging modes and rejects unsafe input", () => {
@@ -105,5 +170,7 @@ test("build exposes exclusive validation and staging modes and rejects unsafe in
   assert.match(build, /service_role/);
   assert.match(build, /localhost/);
   assert.match(build, /Auth callback must be exactly https:\/\/getcompr\.nl\/auth-callback\.html/);
+  assert.match(build, /App Store review URL must be an apps\.apple\.com app URL/);
+  assert.match(build, /appStoreReviewUrl: \$\(\$vals\[6\]\)/);
   assert.doesNotMatch(build, /Compress-Archive|App Store Connect|TestFlight|xcrun/);
 });

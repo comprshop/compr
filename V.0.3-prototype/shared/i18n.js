@@ -3,12 +3,23 @@
     {code:"en",label:"EN"},{code:"nl",label:"NL"},{code:"de",label:"DE"},{code:"fr",label:"FR"}
   ];
   const copy={
+    "Sign in with Apple":{nl:"Log in met Apple",de:"Mit Apple anmelden",fr:"Se connecter avec Apple"},
+    "One tap securely connects your saved products and COMPR Pro.":{nl:"Met één tik koppel je veilig je opgeslagen producten en COMPR Pro.",de:"Mit einem Tippen verbindest du deine gespeicherten Produkte und COMPR Pro sicher.",fr:"Un geste suffit pour relier en toute sécurité vos produits enregistrés et COMPR Pro."},
+    "Use the COMPR app to sign in securely with your Apple Account.":{nl:"Gebruik de COMPR-app om veilig in te loggen met je Apple Account.",de:"Melde dich in der COMPR-App sicher mit deinem Apple Account an.",fr:"Utilisez l’app COMPR pour vous connecter en toute sécurité avec votre compte Apple."},
+    "Opening the COMPR app…":{nl:"De COMPR-app openen…",de:"COMPR-App wird geöffnet…",fr:"Ouverture de l’app COMPR…"},
+    "Finish signing in with Apple in the COMPR app, then return here.":{nl:"Rond Log in met Apple af in de COMPR-app en kom daarna hier terug.",de:"Schließe die Apple-Anmeldung in der COMPR-App ab und kehre dann hierher zurück.",fr:"Terminez la connexion avec Apple dans l’app COMPR, puis revenez ici."},
+    "Open the COMPR app and tap Sign in with Apple.":{nl:"Open de COMPR-app en tik op Log in met Apple.",de:"Öffne die COMPR-App und tippe auf Mit Apple anmelden.",fr:"Ouvrez l’app COMPR et touchez Se connecter avec Apple."},
+    "You're signed in. Reopen COMPR to continue.":{nl:"Je bent ingelogd. Open COMPR opnieuw om verder te gaan.",de:"Du bist angemeldet. Öffne COMPR erneut, um fortzufahren.",fr:"Vous êtes connecté. Rouvrez COMPR pour continuer."},
+    "Your Apple Account is securely connected.":{nl:"Je Apple Account is veilig gekoppeld.",de:"Dein Apple Account ist sicher verbunden.",fr:"Votre compte Apple est connecté en toute sécurité."},
     "SAVE MONEY WITH COMPR":{nl:"BESPAAR MET COMPR",de:"MIT COMPR SPAREN",fr:"ÉCONOMISEZ AVEC COMPR"},
     "COMPR'S SMART PRICE CHECK":{nl:"COMPR'S SLIMME PRIJSCHECK",de:"COMPRS SMARTER PREISCHECK",fr:"LE CONTRÔLE DE PRIX COMPR"},
     "Search for the exact same product at a better price.":{nl:"Zoek exact hetzelfde product voor een betere prijs.",de:"Finde exakt dasselbe Produkt zu einem besseren Preis.",fr:"Trouvez exactement le même produit à un meilleur prix."},
     "FIND THIS CHEAPER":{nl:"VIND DIT GOEDKOPER",de:"GÜNSTIGER FINDEN",fr:"TROUVER MOINS CHER"},
     "Checking this product…":{nl:"Product controleren…",de:"Produkt wird geprüft…",fr:"Vérification du produit…"},
     "Compare products":{nl:"Producten vergelijken",de:"Produkte vergleichen",fr:"Comparer les produits"},
+    "Your collection":{nl:"Jouw overzicht",de:"Deine Übersicht",fr:"Votre sélection"},
+    "Saved products":{nl:"Mijn opgeslagen producten",de:"Gespeicherte Produkte",fr:"Produits enregistrés"},
+    "Compare what you saved or check a product for a better price.":{nl:"Vergelijk wat je hebt opgeslagen of zoek per product een betere prijs.",de:"Vergleiche deine gespeicherten Produkte oder suche einen besseren Preis.",fr:"Comparez vos produits enregistrés ou recherchez un meilleur prix."},
     "See prices clearly, spot important differences and find a better deal.":{nl:"Bekijk prijzen duidelijk, zie belangrijke verschillen en vind een betere deal.",de:"Preise klar vergleichen, Unterschiede erkennen und besser kaufen.",fr:"Comparez clairement les prix et trouvez une meilleure offre."},
     "lowest price":{nl:"laagste prijs",de:"niedrigster Preis",fr:"prix le plus bas"},
     "potential difference":{nl:"mogelijk verschil",de:"möglicher Unterschied",fr:"différence potentielle"},
@@ -22,6 +33,8 @@
     "Overview":{nl:"Overzicht",de:"Übersicht",fr:"Aperçu"},
     "Saved products at a glance.":{nl:"Opgeslagen producten in één overzicht.",de:"Gespeicherte Produkte auf einen Blick.",fr:"Vos produits enregistrés en un coup d’œil."},
     "Country":{nl:"Land",de:"Land",fr:"Pays"},
+    "saved":{nl:"opgeslagen",de:"gespeichert",fr:"enregistrés"},
+    "Open saved products":{nl:"Open opgeslagen producten",de:"Gespeicherte Produkte öffnen",fr:"Ouvrir les produits enregistrés"},
     "Your country":{nl:"Jouw land",de:"Dein Land",fr:"Votre pays"},
     "Language":{nl:"Taal",de:"Sprache",fr:"Langue"},
     "YOUR SMART SHOPPING LIST":{nl:"JOUW SLIMME SHOPLIJST",de:"DEINE SMARTE EINKAUFSLISTE",fr:"VOTRE LISTE D’ACHATS MALIGNE"},
@@ -29,13 +42,109 @@
     "Save products before you decide.":{nl:"Bewaar producten voordat je kiest.",de:"Speichere Produkte, bevor du dich entscheidest.",fr:"Enregistrez les produits avant de choisir."},
     "Detecting product...":{nl:"Product herkennen...",de:"Produkt wird erkannt...",fr:"Détection du produit..."},
     "PRODUCT DETECTED":{nl:"PRODUCT HERKEND",de:"PRODUKT ERKANNT",fr:"PRODUIT DÉTECTÉ"},
+    "Product detected":{nl:"Product herkend",de:"Produkt erkannt",fr:"Produit détecté"},
     "+ SAVE & COMPARE":{nl:"+ BEWAREN & VERGELIJKEN",de:"+ SPEICHERN & VERGLEICHEN",fr:"+ ENREGISTRER & COMPARER"},
     "✓ SAVED — REMOVE":{nl:"✓ BEWAARD — VERWIJDEREN",de:"✓ GESPEICHERT — ENTFERNEN",fr:"✓ ENREGISTRÉ — SUPPRIMER"},
     "COMPARE BEFORE YOU BUY":{nl:"VERGELIJK VOORDAT JE KOOPT",de:"VERGLEICHE VOR DEM KAUF",fr:"COMPAREZ AVANT D’ACHETER"},
     "Compare your saved options before you decide.":{nl:"Vergelijk je opgeslagen opties voordat je kiest.",de:"Vergleiche deine gespeicherten Optionen vor der Entscheidung.",fr:"Comparez vos options enregistrées avant de choisir."},
     "COMPARE NOW":{nl:"NU VERGELIJKEN",de:"JETZT VERGLEICHEN",fr:"COMPARER"},
     "Find This Cheaper":{nl:"Vind dit goedkoper",de:"Günstiger finden",fr:"Trouver moins cher"},
+    "Start price check":{nl:"Start prijscontrole",de:"Preisprüfung starten",fr:"Lancer la vérification du prix"},
+    "Ready for a reliable price check":{nl:"Klaar voor een betrouwbare prijscontrole",de:"Bereit für eine zuverlässige Preisprüfung",fr:"Prêt pour une vérification de prix fiable"},
+    "Start when you want COMPR to search for the same product at a reliable retailer.":{nl:"Start wanneer je wilt dat COMPR bij betrouwbare winkels naar hetzelfde product zoekt.",de:"Starte, wenn COMPR bei zuverlässigen Händlern nach demselben Produkt suchen soll.",fr:"Lancez la recherche lorsque vous voulez que COMPR cherche le même produit chez des vendeurs fiables."},
+    "Building a reliable product fingerprint…":{nl:"Betrouwbare productgegevens voorbereiden…",de:"Zuverlässige Produktdaten werden vorbereitet…",fr:"Préparation des données produit fiables…"},
+    "Searching reliable retailer pages…":{nl:"Betrouwbare winkels doorzoeken…",de:"Zuverlässige Händler werden durchsucht…",fr:"Recherche chez des vendeurs fiables…"},
+    "Preparing search…":{nl:"Zoekopdracht voorbereiden…",de:"Suche wird vorbereitet…",fr:"Préparation de la recherche…"},
+    "Finding the same product…":{nl:"Hetzelfde product zoeken…",de:"Dasselbe Produkt wird gesucht…",fr:"Recherche du même produit…"},
+    "Checking other stores…":{nl:"Andere winkels controleren…",de:"Andere Händler werden geprüft…",fr:"Vérification d’autres boutiques…"},
+    "Comparing total prices…":{nl:"Totaalprijzen vergelijken…",de:"Gesamtpreise werden verglichen…",fr:"Comparaison des prix totaux…"},
+    "Reliable matches found":{nl:"Betrouwbare matches gevonden",de:"Zuverlässige Treffer gefunden",fr:"Correspondances fiables trouvées"},
+    "No reliable match found":{nl:"Geen betrouwbare match gevonden",de:"Kein zuverlässiger Treffer gefunden",fr:"Aucune correspondance fiable trouvée"},
+    "No retailer results were returned. Your search was not used.":{nl:"Er zijn nu geen winkelresultaten gevonden. Je zoekopdracht is niet gebruikt.",de:"Derzeit wurden keine Händlerergebnisse gefunden. Deine Suche wurde nicht verwendet.",fr:"Aucun résultat de vendeur n’a été trouvé. Votre recherche n’a pas été utilisée."},
+    "No better reliable product was found. Your search was not used.":{nl:"Er is geen beter betrouwbaar product gevonden. Je zoekopdracht is niet gebruikt.",de:"Es wurde kein besseres zuverlässiges Produkt gefunden. Deine Suche wurde nicht verwendet.",fr:"Aucun meilleur produit fiable n’a été trouvé. Votre recherche n’a pas été utilisée."},
+    "Reliable results: {count}. Best matches are shown first.":{nl:"Betrouwbare resultaten: {count}. De beste matches staan bovenaan.",de:"Zuverlässige Ergebnisse: {count}. Die besten Treffer stehen oben.",fr:"Résultats fiables : {count}. Les meilleures correspondances sont affichées en premier."},
+    "Exact match":{nl:"Exacte match",de:"Exakter Treffer",fr:"Correspondance exacte"},
+    "Strong match":{nl:"Sterke match",de:"Starker Treffer",fr:"Correspondance forte"},
+    "Likely match":{nl:"Waarschijnlijke match",de:"Wahrscheinlicher Treffer",fr:"Correspondance probable"},
+    "Possible match":{nl:"Mogelijke match",de:"Möglicher Treffer",fr:"Correspondance possible"},
+    "Similar product":{nl:"Vergelijkbaar product",de:"Ähnliches Produkt",fr:"Produit similaire"},
+    "Different product":{nl:"Ander product",de:"Anderes Produkt",fr:"Produit différent"},
+    "Same brand":{nl:"Hetzelfde merk",de:"Dieselbe Marke",fr:"Même marque"},
+    "Same product type":{nl:"Hetzelfde producttype",de:"Derselbe Produkttyp",fr:"Même type de produit"},
+    "Same model":{nl:"Hetzelfde model",de:"Dasselbe Modell",fr:"Même modèle"},
+    "Same generation":{nl:"Dezelfde generatie",de:"Dieselbe Generation",fr:"Même génération"},
+    "Same capacity":{nl:"Dezelfde capaciteit",de:"Dieselbe Kapazität",fr:"Même capacité"},
+    "Matching product code":{nl:"Overeenkomstige productcode",de:"Übereinstimmender Produktcode",fr:"Code produit correspondant"},
+    "Matching product name":{nl:"Overeenkomstige productnaam",de:"Übereinstimmender Produktname",fr:"Nom de produit correspondant"},
+    "Similar product name":{nl:"Vergelijkbare productnaam",de:"Ähnlicher Produktname",fr:"Nom de produit similaire"},
+    "Same colour":{nl:"Dezelfde kleur",de:"Dieselbe Farbe",fr:"Même couleur"},
+    "Different colour or variant":{nl:"Andere kleur of uitvoering",de:"Andere Farbe oder Variante",fr:"Autre couleur ou variante"},
+    "{amount} lower than the saved price":{nl:"{amount} lager dan de opgeslagen prijs",de:"{amount} günstiger als der gespeicherte Preis",fr:"{amount} de moins que le prix enregistré"},
+    "View possible match":{nl:"Mogelijke match bekijken",de:"Möglichen Treffer ansehen",fr:"Voir la correspondance possible"},
+    "Go directly to store":{nl:"Direct naar de winkel",de:"Direkt zum Händler",fr:"Aller directement chez le vendeur"},
+    "BETTER PRICE FOUND":{nl:"BETERE PRIJS GEVONDEN",de:"BESSEREN PREIS GEFUNDEN",fr:"MEILLEUR PRIX TROUVÉ"},
+    "Current price":{nl:"Huidige prijs",de:"Aktueller Preis",fr:"Prix actuel"},
+    "Best price":{nl:"Beste prijs",de:"Bester Preis",fr:"Meilleur prix"},
+    "YOU SAVE":{nl:"JIJ BESPAART",de:"DU SPARST",fr:"VOUS ÉCONOMISEZ"},
+    "Retailer":{nl:"Winkel",de:"Händler",fr:"Vendeur"},
+    "{retailer} · Price checked just now":{nl:"{retailer} · Prijs zojuist gecontroleerd",de:"{retailer} · Preis soeben geprüft",fr:"{retailer} · Prix vérifié à l’instant"},
+    "View cheaper option":{nl:"Goedkopere optie bekijken",de:"Günstigere Option ansehen",fr:"Voir l’option moins chère"},
+    "Please wait a moment":{nl:"Wacht even",de:"Bitte kurz warten",fr:"Veuillez patienter"},
+    "You're searching a little too quickly. Try again shortly.":{nl:"Je zoekt iets te snel. Probeer het zo opnieuw.",de:"Du suchst etwas zu schnell. Versuche es gleich erneut.",fr:"Vous effectuez des recherches trop rapidement. Réessayez bientôt."},
+    "Search unavailable":{nl:"Zoeken niet beschikbaar",de:"Suche nicht verfügbar",fr:"Recherche indisponible"},
+    "We couldn't complete the search. Try again.":{nl:"De zoekopdracht kon niet worden afgerond. Probeer het opnieuw.",de:"Die Suche konnte nicht abgeschlossen werden. Versuche es erneut.",fr:"La recherche n’a pas pu être terminée. Réessayez."},
+    "We couldn't complete the search":{nl:"De zoekopdracht kon niet worden afgerond",de:"Die Suche konnte nicht abgeschlossen werden",fr:"La recherche n’a pas pu être terminée"},
+    "Please try again in a moment.":{nl:"Probeer het over een moment opnieuw.",de:"Versuche es gleich noch einmal.",fr:"Réessayez dans un instant."},
+    "Try again":{nl:"Opnieuw proberen",de:"Erneut versuchen",fr:"Réessayer"},
+    "Retailer product code":{nl:"Productcode van de winkel",de:"Produktcode des Händlers",fr:"Code produit du vendeur"},
+    "Selected product":{nl:"Geselecteerd product",de:"Ausgewähltes Produkt",fr:"Produit sélectionné"},
+    "Product name unavailable":{nl:"Productnaam niet beschikbaar",de:"Produktname nicht verfügbar",fr:"Nom du produit indisponible"},
+    "Price unavailable":{nl:"Prijs niet beschikbaar",de:"Preis nicht verfügbar",fr:"Prix indisponible"},
+    "No identifier detected — matching will be less certain.":{nl:"Geen productcode gevonden — een betrouwbare match is daardoor moeilijker.",de:"Kein Produktcode erkannt — eine zuverlässige Übereinstimmung ist dadurch schwieriger.",fr:"Aucun code produit détecté — une correspondance fiable sera donc plus difficile."},
+    "COMPR only shows confident matches. Always verify the retailer price and availability before buying.":{nl:"COMPR toont alleen betrouwbare matches. Controleer vóór aankoop altijd de prijs en beschikbaarheid bij de winkel.",de:"COMPR zeigt nur zuverlässige Treffer. Prüfe vor dem Kauf immer Preis und Verfügbarkeit beim Händler.",fr:"COMPR affiche uniquement des correspondances fiables. Vérifiez toujours le prix et la disponibilité chez le vendeur avant l’achat."},
+    "Check if the same product is available for less.":{nl:"Controleer of hetzelfde product ergens betrouwbaar goedkoper verkrijgbaar is.",de:"Prüfe, ob dasselbe Produkt zuverlässig günstiger erhältlich ist.",fr:"Vérifiez si le même produit est disponible moins cher auprès d’une source fiable."},
+    "When you start a price check, COMPR sends this product's details and page URL to its secure backend and search provider.":{nl:"Als je een prijscontrole start, stuurt COMPR de productgegevens en pagina-URL naar de beveiligde backend en zoekprovider.",de:"Wenn du eine Preisprüfung startest, sendet COMPR Produktdaten und Seiten-URL an das sichere Backend und den Suchanbieter.",fr:"Lorsque vous lancez une vérification, COMPR envoie les données du produit et l’URL à son service sécurisé et à son moteur de recherche."},
+    "Save & Compare":{nl:"Bewaar en vergelijk",de:"Speichern und vergleichen",fr:"Enregistrer et comparer"},
+    "Saved — remove":{nl:"Bewaard — verwijderen",de:"Gespeichert — entfernen",fr:"Enregistré — supprimer"},
+    "Store reviews":{nl:"Winkelreviews",de:"Shop-Bewertungen",fr:"Avis boutique"},
+    "Review COMPR in the App Store":{nl:"Beoordeel COMPR in de App Store",de:"COMPR im App Store bewerten",fr:"Évaluer COMPR dans l’App Store"},
+    "Couldn't open the App Store page.":{nl:"De App Store-pagina kon niet worden geopend.",de:"Die App-Store-Seite konnte nicht geöffnet werden.",fr:"Impossible d’ouvrir la page de l’App Store."},
+    "In stock when checked":{nl:"Op voorraad bij controle",de:"Bei Prüfung auf Lager",fr:"En stock lors de la vérification"},
+    "Available for pre-order":{nl:"Beschikbaar als pre-order",de:"Zur Vorbestellung verfügbar",fr:"Disponible en précommande"},
+    "Out of stock when checked":{nl:"Niet op voorraad bij controle",de:"Bei Prüfung nicht auf Lager",fr:"Rupture de stock lors de la vérification"},
+    "Availability not confirmed":{nl:"Beschikbaarheid niet bevestigd",de:"Verfügbarkeit nicht bestätigt",fr:"Disponibilité non confirmée"},
     "Sign in":{nl:"Inloggen",de:"Anmelden",fr:"Se connecter"},
+    "Sign in to continue":{nl:"Log in om verder te gaan",de:"Melde dich an, um fortzufahren",fr:"Connectez-vous pour continuer"},
+    "Sign in to start your free searches.":{nl:"Log in om je gratis zoekopdrachten te starten.",de:"Melde dich an, um deine kostenlosen Suchen zu starten.",fr:"Connectez-vous pour commencer vos recherches gratuites."},
+    "Sign in to use price checks":{nl:"Log in om prijzen te controleren",de:"Melde dich für Preisprüfungen an",fr:"Connectez-vous pour vérifier les prix"},
+    "Open the COMPR account page to sign in.":{nl:"Open de COMPR-accountpagina om in te loggen.",de:"Öffne die COMPR-Kontoseite, um dich anzumelden.",fr:"Ouvrez la page de compte COMPR pour vous connecter."},
+    "Account unavailable":{nl:"Account niet beschikbaar",de:"Konto nicht verfügbar",fr:"Compte indisponible"},
+    "Sign in to start your free searches":{nl:"Log in voor je gratis zoekopdrachten",de:"Melde dich für deine kostenlosen Suchen an",fr:"Connectez-vous pour vos recherches gratuites"},
+    "5 free searches to get started":{nl:"Je begint met 5 gratis zoekopdrachten",de:"Du startest mit 5 kostenlosen Suchen",fr:"Commencez avec 5 recherches gratuites"},
+    "Account temporarily unavailable":{nl:"Account tijdelijk niet beschikbaar",de:"Konto vorübergehend nicht verfügbar",fr:"Compte temporairement indisponible"},
+    "Try refreshing in a moment.":{nl:"Probeer het zo nog eens.",de:"Versuche es gleich noch einmal.",fr:"Réessayez dans un instant."},
+    "Usage unavailable":{nl:"Gebruik niet beschikbaar",de:"Nutzung nicht verfügbar",fr:"Utilisation indisponible"},
+    "{remaining} of {limit} free checks remaining":{nl:"Nog {remaining} van {limit} gratis controles",de:"Noch {remaining} von {limit} kostenlosen Prüfungen",fr:"{remaining} vérifications gratuites sur {limit} restantes"},
+    "{remaining} of {limit} free searches remaining":{nl:"Nog {remaining} van {limit} gratis zoekopdrachten",de:"Noch {remaining} von {limit} kostenlosen Suchen",fr:"{remaining} recherches gratuites sur {limit} restantes"},
+    "{remaining} of {limit} searches remaining":{nl:"Nog {remaining} van {limit} zoekopdrachten",de:"Noch {remaining} von {limit} Suchen",fr:"{remaining} recherches sur {limit} restantes"},
+    "{remaining} of {limit} price checks remaining":{nl:"Nog {remaining} van {limit} prijscontroles",de:"Noch {remaining} von {limit} Preisprüfungen",fr:"{remaining} vérifications de prix sur {limit} restantes"},
+    "Founding member #{number}":{nl:"Founding-lid #{number}",de:"Gründungsmitglied #{number}",fr:"Membre fondateur n°{number}"},
+    "FOUNDING MEMBER #{number}":{nl:"FOUNDING-LID #{number}",de:"GRÜNDUNGSMITGLIED #{number}",fr:"MEMBRE FONDATEUR N°{number}"},
+    "Access ends {date}":{nl:"Toegang eindigt op {date}",de:"Zugang endet am {date}",fr:"L’accès prend fin le {date}"},
+    "Renews {date}":{nl:"Wordt verlengd op {date}",de:"Verlängert sich am {date}",fr:"Renouvellement le {date}"},
+    "Upgrade whenever you need more checks":{nl:"Upgrade wanneer je meer controles nodig hebt",de:"Upgrade, wenn du mehr Prüfungen brauchst",fr:"Passez à l’offre supérieure si vous avez besoin de plus de vérifications"},
+    "Manage subscription":{nl:"Abonnement beheren",de:"Abo verwalten",fr:"Gérer l’abonnement"},
+    "View plans":{nl:"Bekijk abonnementen",de:"Tarife ansehen",fr:"Voir les abonnements"},
+    "Sign out":{nl:"Uitloggen",de:"Abmelden",fr:"Se déconnecter"},
+    "Delete account":{nl:"Account verwijderen",de:"Konto löschen",fr:"Supprimer le compte"},
+    "Refresh account":{nl:"Account vernieuwen",de:"Konto aktualisieren",fr:"Actualiser le compte"},
+    "Opening secure checkout…":{nl:"Beveiligde betaalpagina openen…",de:"Sichere Zahlungsseite wird geöffnet…",fr:"Ouverture de la page de paiement sécurisée…"},
+    "Complete the payment in the new tab.":{nl:"Rond de betaling af in het nieuwe tabblad.",de:"Schließe die Zahlung im neuen Tab ab.",fr:"Terminez le paiement dans le nouvel onglet."},
+    "Opening secure billing portal…":{nl:"Beveiligd klantenportaal openen…",de:"Sicheres Kundenportal wird geöffnet…",fr:"Ouverture du portail client sécurisé…"},
+    "Stripe billing portal opened.":{nl:"Stripe-klantenportaal geopend.",de:"Stripe-Kundenportal geöffnet.",fr:"Portail client Stripe ouvert."},
+    "Purchases are not available in this build yet.":{nl:"Aankopen zijn in deze versie nog niet beschikbaar.",de:"Käufe sind in dieser Version noch nicht verfügbar.",fr:"Les achats ne sont pas encore disponibles dans cette version."},
+    "Manage your Apple subscription in the App Store.":{nl:"Beheer je Apple-abonnement in de App Store.",de:"Verwalte dein Apple-Abonnement im App Store.",fr:"Gérez votre abonnement Apple dans l’App Store."},
+    "Your COMPR subscription is active.":{nl:"Je COMPR-abonnement is actief.",de:"Dein COMPR-Abo ist aktiv.",fr:"Votre abonnement COMPR est actif."},
     "Sign in to COMPR":{nl:"Inloggen bij COMPR",de:"Bei COMPR anmelden",fr:"Se connecter à COMPR"},
     "SECURE ACCOUNT ACCESS":{nl:"VEILIGE ACCOUNTTOEGANG",de:"SICHERER KONTOZUGANG",fr:"ACCÈS SÉCURISÉ AU COMPTE"},
     "Enter your email to receive a secure one-time code and magic link.":{nl:"Vul je e-mailadres in om een veilige eenmalige code en magic link te ontvangen.",de:"Gib deine E-Mail-Adresse ein, um einen sicheren Einmalcode und Magic Link zu erhalten.",fr:"Saisissez votre e-mail pour recevoir un code à usage unique et un lien magique sécurisés."},
@@ -93,6 +202,21 @@
     "Open a product first":{nl:"Open eerst een product",de:"Öffne zuerst ein Produkt",fr:"Ouvrez d’abord un produit"},
     "Visit any supported product page and open COMPR again.":{nl:"Bezoek een ondersteunde productpagina en open COMPR opnieuw.",de:"Besuche eine unterstützte Produktseite und öffne COMPR erneut.",fr:"Visitez une page produit prise en charge et rouvrez COMPR."},
     "You're not on a product page":{nl:"Je bent niet op een productpagina",de:"Du bist nicht auf einer Produktseite",fr:"Vous n'êtes pas sur une page produit"},
+    "Open a product page":{nl:"Open een productpagina",de:"Öffne eine Produktseite",fr:"Ouvrez une page produit"},
+    "Choose the product you want COMPR to check.":{nl:"Kies het product dat je met COMPR wilt controleren.",de:"Wähle das Produkt, das COMPR prüfen soll.",fr:"Choisissez le produit que COMPR doit vérifier."},
+    "Go to one specific product":{nl:"Ga naar één specifiek product",de:"Öffne ein bestimmtes Produkt",fr:"Ouvrez un produit précis"},
+    "Open COMPR from your browser menu":{nl:"Open COMPR via het Safari-menu",de:"Öffne COMPR über das Browsermenü",fr:"Ouvrez COMPR depuis le menu du navigateur"},
+    "Tap Find this cheaper":{nl:"Tik op Vind dit goedkoper",de:"Tippe auf Günstiger finden",fr:"Touchez Trouver moins cher"},
+    "Allow COMPR on this website":{nl:"Sta COMPR toe op deze website",de:"Erlaube COMPR auf dieser Website",fr:"Autorisez COMPR sur ce site"},
+    "Safari needs permission before COMPR can recognise the product on this page.":{nl:"Safari heeft toestemming nodig voordat COMPR het product op deze pagina kan herkennen.",de:"Safari benötigt die Erlaubnis, bevor COMPR das Produkt auf dieser Seite erkennen kann.",fr:"Safari a besoin de votre autorisation avant que COMPR puisse reconnaître le produit sur cette page."},
+    "Open Page Menu in Safari":{nl:"Open het paginamenu in Safari",de:"Öffne das Seitenmenü in Safari",fr:"Ouvrez le menu de la page dans Safari"},
+    "Tap Manage Extensions and choose COMPR":{nl:"Tik op Beheer extensies en kies COMPR",de:"Tippe auf Erweiterungen verwalten und wähle COMPR",fr:"Touchez Gérer les extensions et choisissez COMPR"},
+    "Allow this website, then open COMPR again":{nl:"Sta deze website toe en open COMPR opnieuw",de:"Erlaube diese Website und öffne COMPR erneut",fr:"Autorisez ce site, puis rouvrez COMPR"},
+    "Open one specific product":{nl:"Open één specifiek product",de:"Öffne ein bestimmtes Produkt",fr:"Ouvrez un produit précis"},
+    "COMPR recognises individual product pages with a visible product name and price.":{nl:"COMPR herkent afzonderlijke productpagina’s met een zichtbare productnaam en prijs.",de:"COMPR erkennt einzelne Produktseiten mit sichtbarem Produktnamen und Preis.",fr:"COMPR reconnaît les pages produit avec un nom et un prix visibles."},
+    "Open the product at a webshop":{nl:"Open het product bij een webshop",de:"Öffne das Produkt in einem Shop",fr:"Ouvrez le produit dans une boutique"},
+    "Wait until its name and price are visible":{nl:"Wacht tot de naam en prijs zichtbaar zijn",de:"Warte, bis Name und Preis sichtbar sind",fr:"Attendez que son nom et son prix soient visibles"},
+    "Open COMPR from the Safari menu":{nl:"Open COMPR via het Safari-menu",de:"Öffne COMPR über das Safari-Menü",fr:"Ouvrez COMPR depuis le menu Safari"},
     "Open an individual product at a webshop, then follow these steps.":{nl:"Open één specifiek product bij een webshop en volg daarna deze stappen.",de:"Öffne ein einzelnes Produkt in einem Shop und folge diesen Schritten.",fr:"Ouvrez un produit précis dans une boutique, puis suivez ces étapes."},
     "Open the page of one specific product":{nl:"Open de pagina van één specifiek product",de:"Öffne die Seite eines bestimmten Produkts",fr:"Ouvrez la page d'un produit précis"},
     "Click the COMPR icon in your browser":{nl:"Klik op het COMPR-icoon in je browser",de:"Klicke auf das COMPR-Symbol im Browser",fr:"Cliquez sur l'icône COMPR du navigateur"},
@@ -119,6 +243,7 @@
     "Category":{nl:"Categorie",de:"Kategorie",fr:"Catégorie"},
     "All categories":{nl:"Alle categorieën",de:"Alle Kategorien",fr:"Toutes les catégories"},
     "Size / variant":{nl:"Maat / variant",de:"Größe / Variante",fr:"Taille / variante"},
+    "e.g. M or 42":{nl:"bijv. M of 42",de:"z. B. M oder 42",fr:"ex. M ou 42"},
     "Sort by":{nl:"Sorteren op",de:"Sortieren nach",fr:"Trier par"},
     "Newest saved":{nl:"Nieuwste eerst",de:"Neueste zuerst",fr:"Plus récents"},
     "Oldest saved":{nl:"Oudste eerst",de:"Älteste zuerst",fr:"Plus anciens"},
@@ -149,7 +274,19 @@
     "Start with any product page and use COMPR to save your first item.":{nl:"Open een productpagina en gebruik COMPR om je eerste product op te slaan.",de:"Öffne eine Produktseite und speichere dein erstes Produkt mit COMPR.",fr:"Ouvrez une page produit et utilisez COMPR pour enregistrer votre premier article."},
     "Availability":{nl:"Beschikbaarheid",de:"Verfügbarkeit",fr:"Disponibilité"},
     "VIEW PRODUCT":{nl:"PRODUCT BEKIJKEN",de:"PRODUKT ANSEHEN",fr:"VOIR LE PRODUIT"},
-    "REMOVE":{nl:"VERWIJDEREN",de:"ENTFERNEN",fr:"SUPPRIMER"}
+    "View product":{nl:"Bekijk product",de:"Produkt ansehen",fr:"Voir le produit"},
+    "REMOVE":{nl:"VERWIJDEREN",de:"ENTFERNEN",fr:"SUPPRIMER"},
+    "Remove":{nl:"Verwijderen",de:"Entfernen",fr:"Supprimer"},
+    "Add another saved product in this category to compare prices":{nl:"Bewaar nog een product in deze categorie om prijzen te vergelijken",de:"Speichere ein weiteres Produkt dieser Kategorie, um Preise zu vergleichen",fr:"Enregistrez un autre produit de cette catégorie pour comparer les prix"},
+    "Lowest price among your saved products in this category":{nl:"Laagste prijs van je opgeslagen producten in deze categorie",de:"Niedrigster Preis deiner gespeicherten Produkte in dieser Kategorie",fr:"Prix le plus bas parmi vos produits enregistrés dans cette catégorie"},
+    "Image not available":{nl:"Afbeelding niet beschikbaar",de:"Bild nicht verfügbar",fr:"Image indisponible"},
+    "Unknown brand":{nl:"Onbekend merk",de:"Unbekannte Marke",fr:"Marque inconnue"},
+    "Product name not found":{nl:"Productnaam niet gevonden",de:"Produktname nicht gefunden",fr:"Nom du produit introuvable"},
+    "Price not found":{nl:"Prijs niet gevonden",de:"Preis nicht gefunden",fr:"Prix introuvable"},
+    "Original":{nl:"Origineel",de:"Original",fr:"Prix d’origine"},
+    "Not checked yet":{nl:"Nog niet gecontroleerd",de:"Noch nicht geprüft",fr:"Pas encore vérifié"},
+    "Checked just now":{nl:"Zojuist gecontroleerd",de:"Gerade geprüft",fr:"Vérifié à l’instant"},
+    "Product removed":{nl:"Product verwijderd",de:"Produkt entfernt",fr:"Produit supprimé"}
   };
   let language="en";
   let changing=false;
@@ -166,6 +303,10 @@
   function translate(value,lang=language){
     const key=canonical(value);return lang==="en"?key:(copy[key]?.[lang]||key);
   }
+  function format(value,replacements={},lang=language){
+    return translate(value,lang).replace(/\{([a-zA-Z0-9_]+)\}/g,(_match,key)=>
+      Object.prototype.hasOwnProperty.call(replacements,key)?String(replacements[key]):`{${key}}`);
+  }
   function apply(rootNode=document){
     if(changing)return;changing=true;
     const walker=document.createTreeWalker(rootNode,NodeFilter.SHOW_TEXT);
@@ -176,9 +317,16 @@
     });
     document.documentElement.lang=language;changing=false;
   }
+  function inferredLanguage(){
+    let locale;
+    try{locale=new Intl.Locale(navigator.language||"en");}catch{locale={language:"en",region:""};}
+    let timeZone="";try{timeZone=Intl.DateTimeFormat().resolvedOptions().timeZone||"";}catch{}
+    if(locale.language==="nl"||locale.region==="NL"||timeZone==="Europe/Amsterdam")return"nl";
+    return LANGUAGES.some(item=>item.code===locale.language)?locale.language:"en";
+  }
   async function setLanguage(code){
     language=LANGUAGES.some(item=>item.code===code)?code:"en";
-    await ComprBrowser.storage.local.set({languageCode:language});
+    await ComprBrowser.storage.local.set({languageCode:language,languageChosenManually:true});
     document.querySelectorAll("[data-language-select]").forEach(select=>select.value=language);
     apply(document);
   }
@@ -189,12 +337,16 @@
       select.replaceChildren(...LANGUAGES.map(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.label;return option;}));
       select.addEventListener("change",()=>setLanguage(select.value));
     });
-    const saved=await ComprBrowser.storage.local.get(["languageCode"]);language=saved.languageCode||"en";
+    const saved=await ComprBrowser.storage.local.get(["languageCode","languageChosenManually"]);
+    const safariAutomatic=root.ComprRuntimeConfig?.platform==="safari";
+    language=safariAutomatic?inferredLanguage():(saved.languageChosenManually?(saved.languageCode||"en"):inferredLanguage());
+    if(safariAutomatic)await ComprBrowser.storage.local.set({languageCode:language,languageChosenManually:false});
+    else if(!saved.languageChosenManually)await ComprBrowser.storage.local.set({languageCode:language});
     selects.forEach(select=>select.value=language);apply(document);
     observer=new MutationObserver(records=>{if(!changing&&records.some(record=>record.addedNodes.length||record.type==="characterData"))apply(document);});
     observer.observe(document.body,{subtree:true,childList:true,characterData:true});
     root.addEventListener?.("pagehide",()=>{observer?.disconnect();observer=null;},{once:true});
   }
-  root.ComprI18n={LANGUAGES,translate,apply,setLanguage,getLanguage:()=>language,init};
+  root.ComprI18n={LANGUAGES,translate,format,apply,setLanguage,getLanguage:()=>language,init};
   document.addEventListener("DOMContentLoaded",init,{once:true});
 })(typeof globalThis!=="undefined"?globalThis:this);

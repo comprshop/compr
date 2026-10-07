@@ -31,6 +31,7 @@ function cleanColor(value) {
 }
 
 function containsKnownColorName(value) {
+  if (typeof ComprLocaleParsing !== "undefined" && ComprLocaleParsing.colors(value).size) return true;
   return /\b(black|white|grey|gray|blue|navy|indigo|red|green|olive|yellow|orange|purple|pink|brown|beige|cream|silver|metallic|gold|angora|incense|clay|zwart|wit|grijs|blauw|rood|groen|geel|oranje|paars|roze|bruin)\b/i.test(
     value || ""
   );
@@ -128,6 +129,10 @@ function getColorFromSelectedSwatch() {
 function getColorFromProductName(productName) {
   if (!productName) return null;
 
+  if (typeof ComprLocaleParsing !== "undefined") {
+    const found = ComprLocaleParsing.colors(productName);
+    if (found.size === 1) return [...found][0];
+  }
   const lowerName = productName.toLowerCase();
 
   const colors = [

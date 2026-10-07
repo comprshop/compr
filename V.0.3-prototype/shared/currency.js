@@ -1,4 +1,5 @@
 (function (root) {
+  const LocaleParsing = root.ComprLocaleParsing || (typeof require === "function" ? require("./localeParsing.js") : null);
   const COUNTRIES = [
     ["NL", "Netherlands", "EUR"], ["BE", "Belgium", "EUR"], ["DE", "Germany", "EUR"],
     ["FR", "France", "EUR"], ["ES", "Spain", "EUR"], ["IT", "Italy", "EUR"],
@@ -14,23 +15,29 @@
     return COUNTRIES.find(country => country.code === countryCode)?.currency || "EUR";
   }
 
+  function inferCountryCode() {
+    let locale;
+    try { locale = new Intl.Locale(navigator.language || "en"); }
+    catch { locale = { region: "" }; }
+    const region = String(locale.region || "").toUpperCase();
+    if (COUNTRIES.some(country => country.code === region)) return region;
+    let timeZone = "";
+    try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch {}
+    const timeZoneCountries = {
+      "Europe/Amsterdam":"NL", "Europe/Brussels":"BE", "Europe/Berlin":"DE",
+      "Europe/Paris":"FR", "Europe/Madrid":"ES", "Europe/Rome":"IT",
+      "Europe/Dublin":"IE", "Europe/Vienna":"AT", "Europe/Lisbon":"PT",
+      "Europe/London":"GB", "Europe/Zurich":"CH", "Europe/Warsaw":"PL",
+      "Europe/Stockholm":"SE", "Europe/Oslo":"NO", "Europe/Copenhagen":"DK",
+      "Europe/Prague":"CZ", "Europe/Budapest":"HU", "Europe/Bucharest":"RO",
+      "Asia/Tokyo":"JP", "Australia/Sydney":"AU", "Pacific/Auckland":"NZ"
+    };
+    return timeZoneCountries[timeZone] || "NL";
+  }
+
   function parseAmount(value) {
-    const text = String(value || "").trim();
-    if (!/\d/.test(text)) return null;
-    let numeric = text.replace(/[^\d.,-]/g, "");
-    const comma = numeric.lastIndexOf(",");
-    const dot = numeric.lastIndexOf(".");
-    if (comma > dot) numeric = numeric.replace(/\./g, "").replace(/,/g, ".");
-    else if (dot > comma) numeric = numeric.replace(/,/g, "");
-    else if (comma >= 0) {
-      const decimals = numeric.length - comma - 1;
-      numeric = decimals === 3 ? numeric.replace(/,/g, "") : numeric.replace(/,/g, ".");
-    } else if (dot >= 0) {
-      const decimals = numeric.length - dot - 1;
-      if (decimals === 3) numeric = numeric.replace(/\./g, "");
-    }
-    const amount = Number.parseFloat(numeric);
-    return Number.isFinite(amount) ? amount : null;
+    const amount = LocaleParsing.parseAmount(value);
+    return amount;
   }
 
   function detectCurrency(value, explicitCurrency) {
@@ -64,7 +71,13 @@
   }
 
   function format(amount, currency, countryCode) {
-    return new Intl.NumberFormat(countryCode === "US" ? "en-US" : "en-GB", {
+    const locales = {
+      NL:"nl-NL", BE:"nl-BE", DE:"de-DE", FR:"fr-FR", ES:"es-ES", IT:"it-IT", IE:"en-IE",
+      AT:"de-AT", PT:"pt-PT", GB:"en-GB", US:"en-US", CH:"de-CH", CA:"en-CA", AU:"en-AU",
+      NZ:"en-NZ", JP:"ja-JP", PL:"pl-PL", SE:"sv-SE", NO:"nb-NO", DK:"da-DK", CZ:"cs-CZ",
+      HU:"hu-HU", RO:"ro-RO"
+    };
+    return new Intl.NumberFormat(locales[countryCode] || "en-US", {
       style: "currency",
       currency,
       maximumFractionDigits: currency === "JPY" ? 0 : 2
@@ -115,6 +128,7 @@
   const api = {
     COUNTRIES,
     getCurrencyForCountry,
+    inferCountryCode,
     parseAmount,
     detectCurrency,
     convert,

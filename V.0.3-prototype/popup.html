@@ -23,7 +23,7 @@
     <section id="safariExperience" class="safari-experience hidden" aria-labelledby="safariTitle">
       <header class="safari-header">
         <div class="safari-brand"><img src="icons/icon48.png" alt=""><strong>COMPR</strong></div>
-        <span>Private by default</span>
+        <span id="safariPrivacyBadge">Private by default</span>
       </header>
       <div id="safariLive" class="sr-only" role="status" aria-live="polite"></div>
       <section id="safariPanel" class="safari-panel" aria-busy="false">
@@ -31,37 +31,86 @@
         <p id="safariEyebrow" class="safari-eyebrow"></p>
         <h1 id="safariTitle">Starting COMPR…</h1>
         <p id="safariCopy" class="safari-copy">Preparing a private guest session.</p>
+        <ol id="safariGuidance" class="safari-guidance hidden" aria-label="How to use COMPR">
+          <li id="safariGuidanceOne">Open one specific product page</li>
+          <li id="safariGuidanceTwo">Wait until its price and options are visible</li>
+          <li id="safariGuidanceThree">Open COMPR again</li>
+        </ol>
+        <section id="safariWelcome" class="safari-welcome hidden" aria-label="How COMPR works">
+          <strong id="safariWelcomeTitle">One account. Clear choices.</strong>
+          <ul>
+            <li id="safariWelcomeFeatureOne">Sign in securely with Apple</li>
+            <li id="safariWelcomeFeatureTwo">Choose monthly or yearly COMPR Pro</li>
+            <li id="safariWelcomeFeatureThree">Change or cancel later through Apple</li>
+          </ul>
+        </section>
         <article id="safariProduct" class="safari-product hidden">
           <div class="safari-image-frame"><img id="safariImage" alt=""></div>
           <div><h2 id="safariProductName"></h2><p id="safariStore"></p><strong id="safariCurrentPrice"></strong></div>
         </article>
         <section id="safariSavings" class="safari-savings hidden">
-          <span>Verified cheaper match</span><strong id="safariSaving"></strong>
-          <dl><div><dt>Current total</dt><dd id="safariOldTotal" aria-label="Current total price"></dd><small id="safariCurrentRetailer"></small></div><div><dt>Deal total</dt><dd id="safariDealTotal" aria-label="Deal total price"></dd><small id="safariDealRetailer"></small></div></dl>
+          <span id="safariMatchLabel">Verified cheaper match</span><strong id="safariSaving"></strong>
+          <dl><div><dt id="safariCurrentTotalLabel">Current total</dt><dd id="safariOldTotal" aria-label="Current total price"></dd><small id="safariCurrentRetailer"></small></div><div><dt id="safariDealTotalLabel">Deal total</dt><dd id="safariDealTotal" aria-label="Deal total price"></dd><small id="safariDealRetailer"></small></div></dl>
           <p id="safariShipping"></p><div id="safariTrust" class="safari-trust"></div>
         </section>
+        <a id="safariSignIn" class="safari-primary safari-sign-in hidden" href="compr://signin">Sign in with Apple</a>
         <button id="safariPrimary" class="safari-primary hidden" type="button"></button>
         <p id="safariPrivacy" class="safari-privacy">Nothing is checked until you tap.</p>
         <p id="safariUsageNote" class="safari-usage-note hidden"></p>
         <div id="safariActions" class="safari-actions hidden">
-          <button id="safariSave" type="button">Save &amp; track</button>
+          <button id="safariSave" type="button">Save &amp; Compare</button>
           <button id="safariCouponsToggle" type="button" aria-expanded="false">Coupons</button>
           <button id="safariDetailsToggle" type="button" aria-expanded="false">Details</button>
         </div>
         <section id="safariCoupons" class="safari-disclosure hidden" aria-label="Coupons"></section>
         <section id="safariDetails" class="safari-disclosure hidden" aria-label="Product details"></section>
+        <button id="safariPlanAction" class="safari-plan-action hidden" type="button">View plans</button>
       </section>
       <section id="safariProSheet" class="safari-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="safariProTitle">
         <div class="safari-sheet-card">
-          <span>Track this price</span>
-          <h2 id="safariProTitle">COMPR Pro</h2>
-          <p>Save products and get notified when their price drops.</p>
-          <fieldset class="safari-plan-options"><legend class="sr-only">Choose a COMPR Pro plan</legend>
-            <label><input id="safariPlanMonthly" type="radio" name="safariPlan" value="monthly"><span><strong>Monthly</strong><small>€2.99/month</small></span></label>
-            <label class="is-best"><input id="safariPlanYearly" type="radio" name="safariPlan" value="yearly" checked><span><strong>Yearly <em>Best value</em></strong><small>€19.99/year · Save 44%</small></span></label>
+          <span id="safariTrackLabel">COMPR</span>
+          <h2 id="safariProTitle">Choose your COMPR plan</h2>
+          <p id="safariProCopy">Find better prices. Choose how often you want to search.</p>
+          <fieldset class="safari-plan-options"><legend id="safariPlanLegend" class="sr-only">Choose a billing period</legend>
+            <label><input id="safariPlanMonthly" type="radio" name="safariPlan" value="monthly"><span><strong id="safariMonthlyLabel">Monthly</strong></span></label>
+            <label><input id="safariPlanYearly" type="radio" name="safariPlan" value="yearly" checked><span><strong id="safariYearlyLabel">Yearly</strong></span></label>
           </fieldset>
-          <button id="safariTryPro" class="safari-primary" type="button">Continue with COMPR Pro</button>
-          <button id="safariNotNow" class="safari-sheet-secondary" type="button">Not now</button>
+          <div class="safari-plan-grid">
+            <article class="safari-plan-card safari-plan-free">
+              <header><strong>Free</strong><span id="safariFreeCurrent">Current plan</span></header>
+              <div class="safari-plan-price">€0</div>
+              <ul class="safari-plan-features">
+                <li id="safariFreeFeatureOne">5 successful checks in your first month</li>
+                <li id="safariFreeFeatureTwo">3 successful checks per month after that</li>
+              </ul>
+              <button id="safariChooseFree" class="safari-plan-button is-secondary" type="button">Continue Free</button>
+            </article>
+            <article class="safari-plan-card safari-plan-pro">
+              <header><strong>Pro</strong><span id="safariPopularLabel">Popular</span></header>
+              <div id="safariProPrice" class="safari-plan-price">€19.99 / year</div>
+              <ul class="safari-plan-features">
+                <li id="safariProFeatureOne">15 successful price checks per month</li>
+                <li id="safariProFeatureTwo">For regular COMPR users</li>
+              </ul>
+              <button id="safariTryPro" class="safari-plan-button" type="button" disabled>Choose Pro</button>
+            </article>
+            <article class="safari-plan-card safari-plan-ultimate">
+              <header><strong>Ultimate</strong></header>
+              <div id="safariUltimatePrice" class="safari-plan-price">€34.99 / year</div>
+              <ul class="safari-plan-features">
+                <li id="safariUltimateFeatureOne">50 successful price checks per month</li>
+                <li id="safariUltimateFeatureTwo">For frequent price checking</li>
+              </ul>
+              <button id="safariTryUltimate" class="safari-plan-button" type="button" disabled>Choose Ultimate</button>
+            </article>
+          </div>
+          <p id="safariProductStatus" class="safari-product-status" role="status" aria-live="polite">Loading App Store prices…</p>
+          <footer class="safari-plan-footer">
+            <button id="safariRestore" class="safari-sheet-secondary" type="button">Restore Purchases</button>
+            <p id="safariRenewalCopy">Subscriptions renew automatically unless cancelled in your Apple Account.</p>
+            <a id="safariPrivacyLink" href="https://getcompr.nl/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a>
+            <button id="safariNotNow" class="safari-sheet-secondary" type="button">Not now</button>
+          </footer>
         </div>
       </section>
     </section>
@@ -128,13 +177,14 @@
       </div>
       <div id="usageTrack" class="usage-track hidden" aria-hidden="true"><span id="usageBar"></span></div>
       <div id="upgradeOptions" class="upgrade-options hidden">
-        <p class="upgrade-heading"><strong>Founding Access</strong><span>Get launch updates. The first 1,000 paid activations receive discounted pricing.</span></p>
-        <button class="upgrade-button" data-checkout-plan="pro" type="button">
-          <span>Founding updates: Pro</span><small>15 price checks each month</small>
+        <p class="upgrade-heading"><strong>COMPR Pro</strong><span>Compare reliably and track product prices.</span></p>
+        <button class="upgrade-button" data-checkout-plan="monthly" type="button">
+          <span>Monthly</span><small>€2.99 per month</small>
         </button>
-        <button class="upgrade-button upgrade-ultimate" data-checkout-plan="ultimate" type="button">
-          <span>Founding updates: Ultimate</span><small>Unlimited price checks</small>
+        <button class="upgrade-button upgrade-ultimate" data-checkout-plan="yearly" type="button">
+          <span>Yearly · best value</span><small>€19.99 per year</small>
         </button>
+        <button id="restoreApplePurchases" class="manage-billing" type="button">Restore purchases</button>
       </div>
       <button id="accountOpen" class="account-open hidden" type="button">Sign in</button>
       <div id="accountSessionActions" class="account-session-actions hidden">
@@ -337,29 +387,29 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l1 12H5L6 8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 9V6a3 3 0 0 1 6 0v3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </div>
 
-      <h2>
-        You're not on a product page
+      <h2 id="emptyTitle">
+        Open a product page
       </h2>
 
-      <p class="empty-description">
-        Open a product page to compare prices.
+      <p id="emptyDescription" class="empty-description">
+        Choose the product you want COMPR to check.
       </p>
 
       <div class="steps">
 
         <div class="step">
           <span>1</span>
-          <p>Open the page of one specific product</p>
+          <p id="emptyStepOne">Go to one specific product</p>
         </div>
 
         <div class="step">
           <span>2</span>
-          <p>Click the COMPR icon in your browser</p>
+          <p id="emptyStepTwo">Open COMPR from your browser menu</p>
         </div>
 
         <div class="step">
           <span>3</span>
-          <p>Save it, compare it or find it cheaper</p>
+          <p id="emptyStepThree">Tap Find this cheaper</p>
         </div>
 
       </div>
@@ -395,6 +445,11 @@
     <button id="chromeStoreReview" class="chrome-store-review" type="button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       Review us on the Chrome Web Store
+    </button>
+
+    <button id="appStoreReview" class="app-store-review hidden" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      Review COMPR in the App Store
     </button>
 
     <div
@@ -436,12 +491,14 @@
   <script src="shared/productEligibility.js"></script>
   <script src="shared/popupState.js"></script>
   <script src="shared/safariExperience.js"></script>
+  <script src="shared/localeParsing.js"></script>
   <script src="shared/product.js"></script>
   <script src="shared/currency.js"></script>
   <script src="shared/similarity.js"></script>
   <script src="shared/storage.js"></script>
   <script src="shared/i18n.js"></script>
   <script src="shared/runtimeConfig.js"></script>
+  <script src="shared/appleBilling.js"></script>
   <script src="shared/auth.js"></script>
   <script src="shared/apiClient.js"></script>
   <script src="safari-popup.js"></script>

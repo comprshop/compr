@@ -10,6 +10,8 @@ function includesAny(text, keywords) {
 }
 
 function getCategory(jsonProduct, productName = "") {
+  // Product identity outranks the retailer name and site-wide marketing metadata.
+  if (/\b(?:headphones?|headsets?|kopfh[oö]rer|koptelefoons?|earbuds?|earphones?)\b|\bwh[- ]?ch\d{3}\b/i.test(productName)) return "TV & Audio";
   const structuredCategory =
     String(jsonProduct?.category || "")
       .toLowerCase();

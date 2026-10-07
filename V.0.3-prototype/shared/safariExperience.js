@@ -36,17 +36,31 @@
   }
 
   function comparableTotals(product, offer) {
+    const productHelper = root.ComprProduct || (typeof require === "function" ? require("./product.js") : null);
+    const normalizedProduct = productHelper?.toSearchPayload(product || {});
+    const normalizedPrice = normalizedProduct?.price;
+    const sourcePrice = Number.isFinite(normalizedPrice) && normalizedPrice > 0 ? normalizedPrice : NaN;
     const sourceHasTotal = product?.totalPrice !== null && product?.totalPrice !== undefined && product?.totalPrice !== "";
     const sourceHasShipping = product?.shippingIncluded === true || (product?.shippingCost !== null && product?.shippingCost !== undefined && product?.shippingCost !== "" && Number.isFinite(Number(product.shippingCost)));
-    const current = sourceHasTotal ? Number(product.totalPrice) : sourceHasShipping ? Number(product?.price) + Number(product?.shippingCost || 0) : NaN;
+    // If source shipping is unknown, the listed product price is still a safe
+    // lower bound for its checkout total. A fully known deal total below that
+    // lower bound is therefore certainly cheaper; never claim unknown source
+    // shipping as part of the displayed saving.
+    const current = sourceHasTotal ? productHelper?.parseProductPrice(product.totalPrice)
+      : sourceHasShipping ? sourcePrice + Number(product?.shippingCost || 0) : sourcePrice;
     const offerHasTotal = offer?.totalPrice !== null && offer?.totalPrice !== undefined && offer?.totalPrice !== "";
-    const deal = offerHasTotal ? Number(offer.totalPrice) : NaN;
-    const currency = offer?.currency || product?.currency;
-    const sameCurrency = currency && currency === (product?.currency || currency);
+    const currency = offer?.currency || normalizedProduct?.currency;
+    const sameCurrency = currency && currency === normalizedProduct?.currency;
     const hasShippingCost = offer?.shippingCost !== null && offer?.shippingCost !== undefined && offer?.shippingCost !== "";
-    const shippingKnown = offer?.shippingIncluded === true || (hasShippingCost && Number.isFinite(Number(offer.shippingCost)));
-    return { current, deal, currency, shippingKnown,
-      valid: Number.isFinite(current) && Number.isFinite(deal) && deal > 0 && deal < current && sameCurrency && sourceHasShipping && shippingKnown };
+    const shippingCost = hasShippingCost ? Number(offer.shippingCost) : offer?.shippingIncluded === true ? 0 : NaN;
+    const shippingKnown = Number.isFinite(shippingCost) && shippingCost >= 0;
+    const hasPrice = offer?.price !== null && offer?.price !== undefined && offer?.price !== "";
+    const price = hasPrice ? Number(offer.price) : NaN;
+    // A supplied invalid total must not fall back to a different calculation.
+    const deal = offerHasTotal ? Number(offer.totalPrice)
+      : Number.isFinite(price) && price >= 0 && shippingKnown ? price + shippingCost : NaN;
+    return { current, deal, currency, shippingKnown, sourceShippingKnown: sourceHasTotal || sourceHasShipping,
+      valid: Number.isFinite(current) && current > 0 && Number.isFinite(deal) && deal > 0 && deal < current && sameCurrency && shippingKnown };
   }
 
   function selectVerifiedMatch(payload, product) {

@@ -7,7 +7,8 @@ const {
   sameProduct,
   deduplicateProducts,
   getTrustpilotUrl,
-  getSafeWebUrl
+  getSafeWebUrl,
+  toSearchPayload
 } = require("../shared/product.js");
 const {
   parsePrice,
@@ -39,7 +40,8 @@ const {
   getCurrencyForCountry,
   parseAmount,
   detectCurrency,
-  convert
+  convert,
+  format
 } = require("../shared/currency.js");
 const { normalizeCurrency, findPriceInText } = require("../detectors/price.js");
 const { formatDuration, getDeliveryFromJsonLd, getReturnFromJsonLd, getStorePolicyFallback } = require("../detectors/policies.js");
@@ -222,10 +224,30 @@ assert.equal(getCurrencyForCountry("GB"), "GBP");
 assert.equal(getCurrencyForCountry("NL"), "EUR");
 assert.equal(parseAmount("$1,299.95"), 1299.95);
 assert.equal(parseAmount("€ 1.299,95"), 1299.95);
+const safariSearchPayload = toSearchPayload({
+  name: "Sony WH-1000XM5", brand: "Merk niet gevonden", color: "Kleur niet gevonden",
+  material: "Materiaal niet gevonden", price: "€ 349,95", currency: "EUR",
+  canonicalUrl: "https://shop.example/product/sony", webshop: "shop.example"
+});
+assert.equal(safariSearchPayload.price, 349.95);
+assert.equal(safariSearchPayload.brand, "");
+assert.equal(safariSearchPayload.color, "");
+assert.equal(safariSearchPayload.material, "");
+assert.equal(safariSearchPayload.url, "https://shop.example/product/sony");
+const compareSearchPayload = toSearchPayload({
+  name: "AirPods Pro 2nd Gen USB-C", brand: "Apple", price: "$249.00", currency: "USD",
+  convertedAmount: 229.5, convertedCurrency: "EUR", url: "https://shop.example/redirect",
+  canonicalUrl: "https://shop.example/airpods-pro"
+});
+assert.equal(compareSearchPayload.price, 229.5);
+assert.equal(compareSearchPayload.currency, "EUR");
+assert.equal(compareSearchPayload.url, "https://shop.example/airpods-pro");
 assert.equal(detectCurrency("£ 120"), "GBP");
 assert.equal(detectCurrency("1 299 zł"), "PLN");
 assert.equal(detectCurrency("12 999 Kč"), "CZK");
 assert.equal(convert(120, "USD", "GBP", { USD: 1.2, GBP: 0.8 }), 80);
+assert.match(format(12.5, "EUR", "NL"), /12,50/);
+assert.match(format(12.5, "GBP", "GB"), /£12\.50/);
 assert.equal(getSafeWebUrl("javascript:alert(1)"), "");
 assert.equal(getSafeWebUrl("https://shop.example/item"), "https://shop.example/item");
 assert.equal(getSafeWebUrl("http://shop.example/item"), "");
@@ -236,6 +258,11 @@ assert.equal(normalizeCurrency(null, "$ 1,299.95"), "USD");
 assert.equal(normalizeCurrency(null, "1 299,95 CHF"), "CHF");
 assert.equal(findPriceInText("Now only £1,249.99 including VAT"), "£1,249.99");
 assert.equal(findPriceInText("Prijs 1.299,95 EUR incl. btw"), "1.299,95 EUR");
+assert.equal(findPriceInText("Prijs € 59,99"), "€ 59,99");
+assert.equal(findPriceInText("Prijs 59,99 €"), "59,99 €");
+assert.equal(findPriceInText("Prijs €59,99"), "€59,99");
+assert.equal(findPriceInText("Prijs € 1.199,99"), "€ 1.199,99");
+assert.equal(findPriceInText("Prijs € 76,\n81"), "€ 76,\n81");
 assert.equal(formatDuration("P3D"), "3 days");
 assert.equal(getDeliveryFromJsonLd({ offers: { shippingDetails: {
   deliveryTime: { transitTime: { minValue: 2, maxValue: 4 } }

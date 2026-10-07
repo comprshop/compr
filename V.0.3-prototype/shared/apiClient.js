@@ -11,26 +11,83 @@ const ComprApi = (() => {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const error = new Error(payload?.error?.message || "COMPR API request failed");
-      error.code = payload?.error?.code || "API_ERROR"; error.details = payload?.error?.details; throw error;
+      const payloadError = payload?.error;
+      const message = typeof payloadError === "string" ? payloadError : payloadError?.message;
+      const error = new Error(message || "COMPR API request failed");
+      error.code = response.status === 401 ? "AUTH_REQUIRED" :
+        response.status === 403 && message === "Origin not allowed" ? "ORIGIN_NOT_ALLOWED" :
+        payloadError?.code || "API_ERROR";
+      error.status = response.status;
+      error.details = typeof payloadError === "object" ? payloadError?.details : undefined;
+      if (error.code === "AUTH_REQUIRED") await ComprAuth.clearSession({ clearNative: true });
+      throw error;
     }
     return payload;
   }
+  // Persist request identity before sending: retries/reopening recover the same pending result.
+  const inFlight = new Map();
+  async function search(product, requestId = crypto.randomUUID(), options = {}) {
+    const session = await ComprAuth.getSession();
+    if (!session) { const error = new Error("Authentication required"); error.code = "AUTH_REQUIRED"; throw error; }
+    let payload = ComprProduct.toSearchPayload(product);
+    const owner = session?.user?.id || session?.user_id;
+    const storage = typeof ComprBrowser !== "undefined" ? ComprBrowser.storage.local : null;
+    const key = owner ? `comprPendingSearch:${ComprRuntimeConfig.authProjectRef ? ComprRuntimeConfig.authProjectRef + ":" : ""}${owner}:${payload.url}:${payload.price}:${payload.currency}` : null;
+    let saved = key && storage ? (await storage.get([key]))[key] : null;
+    if (saved?.confirmation?.expiresAt && Date.parse(saved.confirmation.expiresAt) <= Date.now()) saved = null;
+    if (saved?.product) payload = saved.product;
+    const id = saved?.requestId || requestId;
+    if (key && storage) await storage.set({ [key]: { requestId: id, product: payload } });
+    if (inFlight.has(id)) return inFlight.get(id);
+    const task = request("/v1/search", { method: "POST", signal: options.signal,
+      headers: { "X-Request-ID": id }, body: JSON.stringify({ requestId: id, product: payload }) });
+    inFlight.set(id, task);
+    try {
+      const response = await task;
+      if (response.confirmation && key && storage) await storage.set({ [key]: { requestId: id, product: payload, confirmation: response.confirmation } });
+      return response;
+    } catch (error) {
+      if (["NO_CONFIDENT_MATCH","NO_RESULTS_FROM_PROVIDER","PRICE_NOT_COMPARABLE","INSUFFICIENT_PRODUCT_DATA",
+        "SEARCH_PROVIDER_ERROR","MALFORMED_PROVIDER_RESPONSE","SEARCH_TIMEOUT","REQUEST_EXPIRED","RESULT_EXPIRED"].includes(error?.code) && key && storage)
+        await storage.remove([key]);
+      throw error;
+    } finally { inFlight.delete(id); }
+  }
+  async function acceptResult(response) {
+    if (!response?.confirmation) return null;
+    const { resultId, token } = response.confirmation;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      try {
+        const accepted = await request("/v1/search/accept", { method: "POST", signal: controller.signal,
+          body: JSON.stringify({ requestId: response.requestId, resultId, token }) });
+        // Keep the persisted request ID: reopening/retry must never charge this result again.
+        return accepted;
+      } catch (error) {
+        if (error?.status && error.status < 500 && error.status !== 429) return null;
+      } finally { clearTimeout(timer); }
+    }
+    return null; // The rendered result stays intact; a later recovery retries the same confirmation.
+  }
   return {
-    me: () => request("/v1/me"),
+    acceptResult,
+    me: (options = {}) => request("/v1/me", options),
     createCheckout: (plan, requestId = crypto.randomUUID()) => request("/v1/billing/checkout", {
       method: "POST",
       headers: { "X-Request-ID": requestId },
       body: JSON.stringify({ plan, requestId })
     }),
     createBillingPortal: () => request("/v1/billing/portal", { method: "POST", body: "{}" }),
+    syncAppleTransaction: signedTransactionInfo => request("/v1/billing/apple/sync", {
+      method: "POST", body: JSON.stringify({ signedTransactionInfo })
+    }),
     deleteAccount: () => request("/v1/account", {
       method: "DELETE", body: JSON.stringify({ confirmation: "DELETE" })
     }),
     resetGuest: () => request("/v1/guest", {
       method: "DELETE", body: JSON.stringify({ confirmation: "RESET" })
     }),
-    search: (product, requestId = crypto.randomUUID(), options = {}) => request("/v1/search", { method: "POST",
-      signal: options.signal, headers: { "X-Request-ID": requestId }, body: JSON.stringify({ requestId, product }) })
+    search
   };
 })();

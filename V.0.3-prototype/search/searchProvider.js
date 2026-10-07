@@ -2,6 +2,7 @@ const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
 const SEARCH_TIMEOUT_MS = 30000;
 const BACKEND_SEARCH_URL = "http://127.0.0.1:8787/api/search";
 const searchCache = new Map();
+const SearchProduct = typeof ComprProduct !== "undefined" ? ComprProduct : require("../shared/product.js");
 
 function getSafeResultUrl(value) {
   if (!value) return "";
@@ -233,18 +234,7 @@ async function searchBackend(product, options = {}) {
   if (options.secureApi && typeof ComprApi !== "undefined") {
     let payload;
     try {
-      payload = await ComprApi.search({
-        name: product?.name || "", brand: product?.brand || "",
-        category: product?.category || "", color: product?.color || "",
-        material: product?.material || "", size: product?.selectedSize || product?.size || "",
-        condition: product?.condition || "", capacity: product?.capacity || "",
-        storage: product?.storage || "", screenSize: product?.screenSize || "",
-        productCode: product?.productCode || null, sku: product?.sku || null,
-        mpn: product?.mpn || null, gtin: product?.gtin || null,
-        price: Number(product?.convertedAmount) || Number(product?.numericPrice) || null,
-        currency: product?.convertedCurrency || product?.currency || "EUR",
-        url: product?.url || null, webshop: product?.webshop || null
-      }, options.requestId || crypto.randomUUID(), { signal: options.signal });
+      payload = await ComprApi.search(product, options.requestId || crypto.randomUUID(), { signal: options.signal });
     } catch (error) {
       if (["NO_RESULTS_FROM_PROVIDER", "NO_CONFIDENT_MATCH", "INSUFFICIENT_PRODUCT_DATA", "PRICE_NOT_COMPARABLE"].includes(error?.code)) {
         return { provider: "compr-secure-api", mode: "live-web", results: [], cached: false,
@@ -254,7 +244,7 @@ async function searchBackend(product, options = {}) {
     }
     return { provider: payload.provider || "compr-secure-api", mode: payload.mode || "live-web",
       results: payload.offers || [], cached: Boolean(payload.cached), usageCharged: Boolean(payload.usageCharged),
-      requestId: payload.requestId || null, outcome: payload.outcome || null };
+      confirmation: payload.confirmation || null, requestId: payload.requestId || null, outcome: payload.outcome || null };
   }
   const fetchImplementation = options.fetchImplementation || fetch;
   const response = await withTimeout(fetchImplementation(BACKEND_SEARCH_URL, {
@@ -262,18 +252,7 @@ async function searchBackend(product, options = {}) {
     signal: options.signal,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      product: {
-        name: product?.name || "", brand: product?.brand || "",
-        category: product?.category || "", color: product?.color || "",
-        material: product?.material || "", size: product?.selectedSize || product?.size || "",
-        condition: product?.condition || "", capacity: product?.capacity || "",
-        storage: product?.storage || "", screenSize: product?.screenSize || "",
-        productCode: product?.productCode || null, sku: product?.sku || null,
-        mpn: product?.mpn || null, gtin: product?.gtin || null,
-        price: Number(product?.convertedAmount) || Number(product?.numericPrice) || null,
-        currency: product?.convertedCurrency || product?.currency || "EUR",
-        url: product?.url || null, webshop: product?.webshop || null
-      }
+      product: SearchProduct.toSearchPayload(product)
     })
   }), options.timeoutMs || SEARCH_TIMEOUT_MS);
   if (!response.ok) throw new Error(`Backend returned ${response.status}`);
@@ -319,6 +298,7 @@ async function findExactProduct(product, options = {}) {
         queriesUsed: backend.queriesUsed,
         pagesChecked: backend.pagesChecked,
         directCandidatesChecked: backend.directCandidatesChecked,
+        confirmation: backend.confirmation,
         usageCharged: backend.usageCharged,
         requestId: backend.requestId,
         outcome: backend.outcome

@@ -1,4 +1,5 @@
 (function (root) {
+  const LocaleParsing = root.ComprLocaleParsing || (typeof require === "function" ? require("./localeParsing.js") : null);
   function normalizeCode(value) {
     return String(value || "")
       .trim()
@@ -41,6 +42,59 @@
     } catch {
       return "";
     }
+  }
+
+  function resolveSafeWebUrl(value, baseUrl) {
+    if (!value) return "";
+    try {
+      const url = new URL(String(value).trim(), baseUrl || undefined);
+      return url.protocol === "https:" ? url.toString() : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function parseProductPrice(value) {
+    const amount = LocaleParsing.parseAmount(value);
+    return amount > 0 ? amount : null;
+  }
+
+  function cleanDetectedValue(value) {
+    const text = String(value || "").trim();
+    return /^(?:merk|kleur|materiaal|brand|colou?r|material) (?:niet gevonden|not found)$/i.test(text)
+      ? "" : text;
+  }
+
+  function toSearchPayload(product = {}) {
+    const url = getSafeWebUrl(product.canonicalUrl) || getSafeWebUrl(product.url) || null;
+    let webshop = cleanDetectedValue(product.webshop);
+    if (!webshop && url) {
+      try { webshop = new URL(url).hostname; } catch { webshop = ""; }
+    }
+    const converted = Number(product.convertedAmount);
+    const numeric = Number(product.numericPrice);
+    let price = Number.isFinite(converted) && converted > 0 ? converted
+      : Number.isFinite(numeric) && numeric > 0 ? numeric
+        : parseProductPrice(product.price);
+    const detectedCurrency = LocaleParsing.currency(product.price);
+    const currency = String(product.convertedCurrency || product.currency || detectedCurrency || "EUR").toUpperCase();
+    const isConverted = Number.isFinite(converted) && converted > 0 && Boolean(product.convertedCurrency);
+    if (!isConverted && detectedCurrency && detectedCurrency !== currency) price = null;
+    const locale = String(product.locale ?? root.navigator?.language ?? "").slice(0, 35);
+    return {
+      name: cleanDetectedValue(product.name), brand: cleanDetectedValue(product.brand),
+      category: cleanDetectedValue(product.category), color: cleanDetectedValue(product.color),
+      material: cleanDetectedValue(product.material), size: cleanDetectedValue(product.selectedSize || product.size),
+      condition: cleanDetectedValue(product.condition), capacity: cleanDetectedValue(product.capacity),
+      storage: cleanDetectedValue(product.storage), screenSize: cleanDetectedValue(product.screenSize),
+      productCode: cleanDetectedValue(product.productCode) || null,
+      sku: cleanDetectedValue(product.sku) || null, mpn: cleanDetectedValue(product.mpn) || null,
+      gtin: cleanDetectedValue(product.gtin) || null,
+      price, currency: /^[A-Z]{3}$/.test(currency) ? currency : "EUR",
+      targetMarket: LocaleParsing.resolveTargetMarket({ ...product, url }, locale),
+      locale: locale,
+      url, webshop: webshop || null
+    };
   }
 
   function getProductIdentity(product) {
@@ -137,6 +191,10 @@
     normalizeCode,
     normalizeUrl,
     getSafeWebUrl,
+    resolveSafeWebUrl,
+    parseProductPrice,
+    cleanDetectedValue,
+    toSearchPayload,
     getProductIdentity,
     getProductCodes,
     sameProduct,

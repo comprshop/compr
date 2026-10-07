@@ -27,6 +27,41 @@ function getImageFromJsonLd(product) {
     null
   );
 }
+
+function resolvePageAssetUrl(value) {
+  if (!value) return "";
+  try {
+    const url = new URL(String(value).trim(), document.baseURI || window.location.href);
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+function getProductImage(jsonProduct) {
+  const candidates = [
+    getImageFromJsonLd(jsonProduct),
+    document.querySelector('meta[property="og:image:secure_url"]')?.content,
+    document.querySelector('meta[property="og:image"]')?.content,
+    document.querySelector('meta[name="twitter:image"], meta[property="twitter:image"]')?.content,
+    document.querySelector('[itemprop="image"]')?.content || document.querySelector('[itemprop="image"]')?.src,
+    document.querySelector('link[rel="image_src"]')?.href
+  ];
+  return candidates.map(resolvePageAssetUrl).find(Boolean) || "";
+}
+
+function getCanonicalProductUrl() {
+  const current = new URL(window.location.href);
+  const candidate = document.querySelector('link[rel="canonical"]')?.href;
+  const resolved = resolvePageAssetUrl(candidate);
+  if (!resolved) return current.href;
+  try {
+    const canonical = new URL(resolved);
+    return canonical.hostname === current.hostname ? canonical.href : current.href;
+  } catch {
+    return current.href;
+  }
+}
 async function getProductInfo() {
   const eligibility = ComprProductEligibility.assessPage(document, window.location, { getPrice, getProductId });
   if (!eligibility.eligible) return null;
@@ -43,12 +78,8 @@ async function getProductInfo() {
     documentTitle: document.title
   }, window.location.hostname);
 
-  const image =
-    getImageFromJsonLd(jsonProduct) ||
-    document.querySelector(
-      'meta[property="og:image"]'
-    )?.content ||
-    "Afbeelding niet gevonden";
+  const image = getProductImage(jsonProduct);
+  const canonicalUrl = getCanonicalProductUrl();
 
   const identifiers = getProductId(jsonProduct);
   const category = getCategory(
@@ -74,20 +105,15 @@ async function getProductInfo() {
 
   const productInfo = {
     isProductPage: true,
+    pageLocale: document.documentElement?.lang || "",
     name,
     rawTitle,
 
-    brand:
-      getBrand(jsonProduct, name) ||
-      "Merk niet gevonden",
+    brand: getBrand(jsonProduct, name) || "",
 
-    color:
-      getColor(jsonProduct, name) ||
-      "Kleur niet gevonden",
+    color: getColor(jsonProduct, name) || "",
 
-    material:
-      (isApparel ? getMaterial(jsonProduct) : null) ||
-      "Materiaal niet gevonden",
+    material: (isApparel ? getMaterial(jsonProduct) : null) || "",
 
     sizes:
       isApparel ? getSizes(jsonProduct) : [],
@@ -125,7 +151,7 @@ async function getProductInfo() {
     image,
 
     sku:
-      identifiers?.sku || null,
+      identifiers?.sku || identifiers?.retailerSku || null,
 
     mpn:
       identifiers?.mpn || null,
@@ -139,11 +165,12 @@ async function getProductInfo() {
     identifierType:
       identifiers?.identifierType || null,
 
-    url:
-      window.location.href,
+    url: canonicalUrl,
+
+    canonicalUrl,
 
     webshop:
-      window.location.hostname
+      new URL(canonicalUrl).hostname
   };
 
   return productInfo;
