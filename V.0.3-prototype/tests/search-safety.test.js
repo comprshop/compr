@@ -9,7 +9,7 @@ function setup(data={},fetch=async()=>({ok:true,json:async()=>({offers:[]})}),cl
 }
 test('10 second cooldown blocks new starts across popup reopen but allows recovery/confirmation',async()=>{
  const data={},clock={now:1000};let calls=0;
- const fetch=async(url,o)=>{calls++;return {ok:true,json:async()=>({requestId:JSON.parse(o.body).requestId,offers:[],confirmation:{resultId:'r',token:'t',expiresAt:'2099-01-01T00:00:00Z'}})};};
+ const fetch=async(url,o)=>{calls++;return {ok:true,json:async()=>url.endsWith('/accept') ? {requestId:JSON.parse(o.body).requestId,usageCharged:true} : ({requestId:JSON.parse(o.body).requestId,offers:[],confirmation:{resultId:'r',token:'t',expiresAt:'2099-01-01T00:00:00Z'}})};};
  const a=setup(data,fetch,clock);const response=await a.search(p,'one');
  const b=setup(data,fetch,clock);await assert.rejects(b.search({...p,url:'https://expert.nl/other'},'two'),e=>e.code==='SEARCH_COOLDOWN'&&e.details.retryAfterSeconds===10);
  await b.search(p,'three');await b.acceptResult(response);assert.equal(calls,3);

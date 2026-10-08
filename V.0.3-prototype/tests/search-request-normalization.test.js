@@ -10,7 +10,7 @@ const Product = require("../shared/product.js");
 test("popup and Compare searches share one normalized Safari product payload", async () => {
   let sent;
   const context = {
-    ComprAuth: { getSession: async () => ({ access_token: "test-access" }) },
+    ComprAuth: { getSession: async () => ({ access_token: "test-access", user: { id: "normalization-user" } }) },
     ComprRuntimeConfig: { apiBaseUrl: "https://sandbox.example" },
     ComprProduct: Product,
     crypto: { randomUUID: () => "123e4567-e89b-42d3-a456-426614174000" },

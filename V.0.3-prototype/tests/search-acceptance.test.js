@@ -6,7 +6,7 @@ const product={name:'JBL Tune 730BT Wit',price:'64.95 EUR',currency:'EUR',url:'h
 const pending={requestId:'id-one',offers:[{price:64}],confirmation:{resultId:'result-one',token:'server-token',expiresAt:'2099-01-01T00:00:00Z'}};
 function context(fetch,data={}){const c={ComprAuth:{getSession:async()=>({access_token:'fixture',user:{id:'user-one'}})},ComprProduct:Product,ComprRuntimeConfig:{apiBaseUrl:'https://sandbox.example'},ComprBrowser:{storage:{local:{get:async keys=>Object.fromEntries(keys.map(k=>[k,data[k]])),set:async value=>Object.assign(data,value),remove:async keys=>keys.forEach(k=>delete data[k])}}},crypto:{randomUUID:()=> 'id-new'},fetch,AbortController,setTimeout,clearTimeout,Date,URL,JSON,Error,Promise,Map};vm.createContext(c);vm.runInContext(source+'\nglobalThis.api=ComprApi;',c);return c.api;}
 test('search does not confirm before client validation/rendering',async()=>{
- const calls=[];const api=context(async(url,o)=>{calls.push(url);return {ok:true,json:async()=>pending};});
+ const calls=[];const api=context(async(url,o)=>{calls.push(url);return {ok:true,json:async()=>url.endsWith('/accept') ? {requestId:'id-one',usageCharged:true} : pending};});
  const response=await api.search(product,'id-one');assert.equal(calls.length,1);assert.ok(calls[0].endsWith('/v1/search'));
  // Invalid/render failure: no acceptResult call, therefore no confirm request.
  assert.equal(response.confirmation.token,'server-token');
