@@ -63,8 +63,12 @@ function getCanonicalProductUrl() {
   }
 }
 async function getProductInfo() {
-  const eligibility = ComprProductEligibility.assessPage(document, window.location, { getPrice, getProductId });
-  if (!eligibility.eligible) return null;
+  const eligibility = ComprProductEligibility.assessPage(document, window.location, { getPrice, getProductId, getPriceCurrency, getPriceProvenance, getSelectedSize });
+  globalThis.__comprLastEligibilityDiagnostics = eligibility.diagnostics || {reason:eligibility.reason};
+  if (!eligibility.eligible) {
+    console.info('[COMPR_PRODUCT_DIAGNOSTIC]', globalThis.__comprLastEligibilityDiagnostics);
+    return null;
+  }
   const jsonProduct = eligibility.jsonProduct;
 
   const visibleName =
@@ -97,6 +101,8 @@ async function getProductInfo() {
     "Accessories"
   ]);
   const isApparel = eligibility.isApparel && apparelCategories.has(category);
+  const selectedSize = getSelectedSize();
+  globalThis.__comprLastEligibilityDiagnostics.selectedSize = selectedSize.status;
   const availability = getAvailability(jsonProduct, isApparel);
   const detectedPrice = getPrice(jsonProduct);
   const storePolicies = getStorePolicies(jsonProduct);
@@ -114,6 +120,9 @@ async function getProductInfo() {
     color: getColor(jsonProduct, name) || "",
 
     material: (isApparel ? getMaterial(jsonProduct) : null) || "",
+
+    selectedSize: isApparel ? selectedSize.value : null,
+    sizeRequired: isApparel && !/accessories/i.test(category),
 
     sizes:
       isApparel ? getSizes(jsonProduct) : [],
@@ -144,6 +153,8 @@ async function getProductInfo() {
 
     price:
       detectedPrice,
+
+    priceProvenance: getPriceProvenance(jsonProduct),
 
     currency:
       getPriceCurrency(jsonProduct, detectedPrice),

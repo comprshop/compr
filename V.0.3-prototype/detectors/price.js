@@ -145,16 +145,26 @@ function getPriceFromPageText() {
   return findPriceInText(text);
 }
 
-function getPrice(jsonProduct) {
-  return (
-    getPriceFromJsonLd(jsonProduct) ||
-    getPriceFromMeta() ||
-    getPriceFromDataElement() ||
-    getPriceFromItemprop() ||
-    getPriceFromDescription() ||
-    getPriceFromPageText() ||
-    "Prijs niet gevonden"
-  );
+function priceSelection(jsonProduct) {
+  const sources = [
+    ['jsonld_offer', () => getPriceFromJsonLd(jsonProduct)], ['meta', getPriceFromMeta],
+    ['data_element', getPriceFromDataElement], ['itemprop', getPriceFromItemprop],
+    ['description', getPriceFromDescription], ['page_text', getPriceFromPageText]
+  ];
+  for (const [source, read] of sources) {
+    const value=read();
+    if (value) return {source, value};
+  }
+  return {source:'missing', value:'Prijs niet gevonden'};
+}
+function getPrice(jsonProduct) { return priceSelection(jsonProduct).value; }
+function getPriceProvenance(jsonProduct) {
+  const selection=priceSelection(jsonProduct);
+  const text=String(document.body?.innerText || '');
+  const inclusive=/\b(?:incl(?:usief|uding)?\.?\s*(?:btw|vat)|inkl\.?\s*mwst)\b/i.test(text);
+  const exclusive=/\b(?:excl(?:usief|uding)?\.?\s*(?:btw|vat)|exkl\.?\s*mwst)\b/i.test(text);
+  // Page-wide labels cannot bind tax treatment to the selected price.
+  return {source:selection.source, taxBasis:'unknown', vatContext:inclusive && exclusive ? 'mixed' : exclusive ? 'exclusive_present' : inclusive ? 'inclusive_present' : 'not_observed'};
 }
 
 function getPriceCurrency(jsonProduct, priceText = "") {
@@ -173,5 +183,5 @@ function getPriceCurrency(jsonProduct, priceText = "") {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normalizeCurrency, formatPrice, findPriceInText };
+  module.exports = { normalizeCurrency, formatPrice, findPriceInText, getPriceProvenance, getPrice };
 }

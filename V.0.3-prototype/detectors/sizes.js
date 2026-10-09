@@ -259,8 +259,41 @@ function getUnavailableSizes() {
   ).slice(0, 50);
 }
 
+// Read only explicit selected controls; available-size lists never imply selection.
+function getSelectedSize() {
+  const found = new Set();
+  const add = (element, context = '') => {
+    if (isUnavailableSizeElement(element)) return;
+    const raw = element.getAttribute?.('data-size') || element.getAttribute?.('data-size-value') || element.getAttribute?.('aria-label') || element.textContent || element.value;
+    const systems = [...new Set((String(context).match(/\b(?:EU|UK|US)\b/gi) || []).map(v=>v.toUpperCase()))];
+    const normalized=normalizeSize(raw);
+    const contextual=/^\d{1,2}(?:[.,]5)?$/.test(normalized || '') && systems.length===1 ? `${systems[0]} ${normalized}` : raw;
+    const values = getSizeValues(contextual);
+    if (values.length !== 1) return;
+    let value = values[0];
+    if (!/^(EU|UK|US)\b/i.test(value) && /^\d/.test(value) && systems.length === 1) value = `${systems[0]} ${value}`;
+    found.add(value.toUpperCase().replace(',', '.').replace(/^(EU|UK|US)\s*/, '$1 '));
+  };
+  for (const select of document.querySelectorAll('select')) {
+    const context = [select.name, select.id, select.getAttribute?.('aria-label')].filter(Boolean).join(' ');
+    if (!/(size|maat)/i.test(context) || select.disabled) continue;
+    for (const option of select.selectedOptions || []) add(option, context);
+  }
+  for (const element of document.querySelectorAll('[aria-checked="true"], [aria-selected="true"], input:checked, [aria-pressed="true"]')) {
+    if (isUnavailableSizeElement(element)) continue;
+    const group = element.closest?.('[data-attr="size"], [data-attribute="size"], [data-attribute-id="size"], .size-selector, .size-swatches, [role="radiogroup"], fieldset');
+    const context = [element.name, element.id, element.getAttribute?.('aria-label'), group?.getAttribute?.('aria-label'), group?.getAttribute?.('data-attr'), group?.getAttribute?.('data-attribute'), group?.getAttribute?.('data-attribute-id'), group?.className,
+      group?.querySelector?.('legend')?.textContent].filter(Boolean).join(' ');
+    if (!/(size|maat)/i.test(context)) continue;
+    const label = element.labels?.[0];
+    add(label || element, context);
+  }
+  return { value: found.size === 1 ? [...found][0] : null, status: found.size > 1 ? 'ambiguous' : found.size === 1 ? 'present' : 'missing' };
+}
+
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
+    getSelectedSize,
     normalizeSize,
     isValidSize,
     getSizeValues,

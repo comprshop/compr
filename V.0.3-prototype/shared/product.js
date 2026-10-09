@@ -81,10 +81,15 @@
     const isConverted = Number.isFinite(converted) && converted > 0 && Boolean(product.convertedCurrency);
     if (!isConverted && detectedCurrency && detectedCurrency !== currency) price = null;
     const locale = String(product.locale ?? root.navigator?.language ?? "").slice(0, 35);
+    const selectedSize = cleanDetectedValue(product.selectedSize || product.size);
+    const sizeSystem = /^(EU|UK|US)$/i.test(product.sizeSystem || "") ? product.sizeSystem.toUpperCase() : "";
+    const boundSize = sizeSystem && /^\d{1,2}(?:[.,]5)?$/.test(selectedSize) ? `${sizeSystem} ${selectedSize}` : selectedSize;
     return {
       name: cleanDetectedValue(product.name), brand: cleanDetectedValue(product.brand),
       category: cleanDetectedValue(product.category), color: cleanDetectedValue(product.color),
-      material: cleanDetectedValue(product.material), size: cleanDetectedValue(product.selectedSize || product.size),
+      ...(product.sizeRequired === true ? {sizeRequired:true} : {}),
+      ...(product.sizeSystem ? {sizeSystem:cleanDetectedValue(product.sizeSystem)} : {}),
+      material: cleanDetectedValue(product.material), size: boundSize,
       condition: cleanDetectedValue(product.condition), capacity: cleanDetectedValue(product.capacity),
       storage: cleanDetectedValue(product.storage), screenSize: cleanDetectedValue(product.screenSize),
       productCode: cleanDetectedValue(product.productCode) || null,

@@ -201,7 +201,7 @@
     const url = String(locationValue?.href || locationValue || "");
     let hostname = "";
     try { hostname = new URL(url).hostname; } catch { return { eligible: false, reason: "invalid_url", jsonProduct: null, isApparel: false }; }
-    if (blockedPage(url)) return { eligible: false, reason: "blocked_page_type", jsonProduct: null, isApparel: false };
+    if (blockedPage(url)) return { eligible: false, reason: "blocked_page_type", jsonProduct: null, isApparel: false, diagnostics: {version:1, reason:"blocked_page_type", pageType:"blocked"} };
 
     const jsonProduct = selectMainJsonProduct(doc, url);
     const visibleName = String(doc.querySelector("h1")?.innerText || "").trim();
@@ -222,7 +222,16 @@
     const eligible = !unresolvedGroup && hasName && ((jsonOffer && Boolean(structuredName)) || (hasPrice && hasId && (productMeta || purchaseControl)) || (hasPrice && productMeta && purchaseControl));
     const categoryText = `${jsonProduct?.category || ""} ${name}`;
     const isApparel = eligible && /\b(shoes?|schoenen?|sneakers?|clothing|kleding|shirts?|tops?|dress|dresses|jurk|jurken|coats?|jas|jassen|jackets?|broek|broeken|pants|trousers?|hoodies?|sweatshirts?|skirts?|rok|rokken)\b/i.test(categoryText);
-    return { eligible, reason: eligible ? "strong_product_evidence" : "insufficient_product_evidence", jsonProduct, isApparel };
+    const diagnostics = {version:1, reason:eligible ? 'strong_product_evidence' : 'insufficient_product_evidence',
+      title:hasName ? 'present' : 'missing_or_invalid', price:hasPrice ? 'present' : 'missing',
+      identifier:hasId ? 'present' : 'missing', structuredProduct:jsonProduct ? 'selected' : 'missing_or_ambiguous',
+      offer:jsonOffer ? 'present' : 'missing', productGroup:unresolvedGroup ? 'unresolved' : 'not_blocking',
+      productMeta:productMeta ? 'present' : 'missing', buyButton:purchaseControl ? 'present' : 'missing',
+      pageType:'not_blocked', documentReadyState: ['loading','interactive','complete'].includes(doc.readyState) ? doc.readyState : 'unknown',
+      currency:helpers.getPriceCurrency?.(jsonProduct,detectedPrice) ? 'present' : 'unknown',
+      priceProvenance:helpers.getPriceProvenance?.(jsonProduct) || null,
+      selectedSize:helpers.getSelectedSize?.().status || 'unknown'};
+    return { eligible, diagnostics, reason: eligible ? "strong_product_evidence" : "insufficient_product_evidence", jsonProduct, isApparel };
   }
 
   function isEligibleProductPayload(product) {
