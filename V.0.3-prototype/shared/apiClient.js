@@ -49,10 +49,22 @@ const ComprApi = (() => {
     storageQueues.set(name, next);
     return next.finally(() => { if (storageQueues.get(name) === next) storageQueues.delete(name); });
   }
-  function binding(product) {
-    // Title can change during recovery; explicit identity/variant/market cannot.
+  function canonicalUrl(value) {
+    try { const url = new URL(String(value || "")); url.hash = ""; return url.href; }
+    catch { return String(value || "").trim(); }
+  }
+  function legacyBinding(product) {
     const fields = ["brand","model","modelTokens","mpn","productCode","ean","gtin","color","size","capacity","targetMarket","locale"];
     return JSON.stringify(fields.map(key => product[key] ?? null));
+  }
+  function binding(product) {
+    // A recoverable action belongs to one concrete page/product context.
+    return JSON.stringify([canonicalUrl(product.url), legacyBinding(product)]);
+  }
+  function contextBinding(context, product) {
+    const supplied = context && typeof context === "object" ? context : {};
+    return JSON.stringify([supplied.source || "unknown", supplied.tabId ?? null,
+      canonicalUrl(supplied.tabUrl || product.url), supplied.fingerprint || binding(product)]);
   }
   const terminalCodes = new Set(["NO_CONFIDENT_MATCH","NO_RESULTS_FROM_PROVIDER","PRICE_NOT_COMPARABLE",
     "INSUFFICIENT_PRODUCT_DATA","SEARCH_PROVIDER_ERROR","MALFORMED_PROVIDER_RESPONSE","SEARCH_TIMEOUT",
@@ -85,20 +97,30 @@ const ComprApi = (() => {
     const scope = actionScope(owner);
     const fresh = ComprProduct.toSearchPayload(product);
     const legacyKey = `comprPendingSearch:${ComprRuntimeConfig.authProjectRef ? ComprRuntimeConfig.authProjectRef + ":" : ""}${owner}:${fresh.url}:${fresh.price}:${fresh.currency}`;
-    const key = `${legacyKey}:v2:${encodeURIComponent(binding(fresh))}`;
+    const context = options.context && typeof options.context === "object" ? {
+      source: options.context.source || "unknown", tabId: options.context.tabId ?? null,
+      tabUrl: canonicalUrl(options.context.tabUrl || fresh.url), fingerprint: options.context.fingerprint || binding(fresh)
+    } : null;
+    if (context && context.fingerprint !== binding(fresh)) {
+      const error = new Error("Search product context changed"); error.code = "SEARCH_CONTEXT_MISMATCH"; throw error;
+    }
+    const key = `${legacyKey}:v3:${encodeURIComponent(binding(fresh))}:${encodeURIComponent(contextBinding(context, fresh))}`;
     if (inFlight.has(key)) return inFlight.get(key);
     const task = (async () => {
       const action = await locked(`comprSearchAction:${scope}`, async () => {
         let saved = storage ? (await storage.get([key]))[key] : null;
         if (!saved && storage) {
-          const legacy = (await storage.get([legacyKey]))[legacyKey];
+          const oldV2Key = `${legacyKey}:v2:${encodeURIComponent(legacyBinding(fresh))}`;
+          const candidates = await storage.get([oldV2Key, legacyKey]);
+          const legacy = candidates[oldV2Key] || candidates[legacyKey];
           if (legacy?.requestId && legacy.product && binding(legacy.product) === binding(fresh)) {
-            saved = { ...legacy, state: legacy.confirmation ? "awaiting_confirmation" : "pending", version: 2 };
+            saved = { ...legacy, context, state: legacy.confirmation ? "awaiting_confirmation" : "pending", version: 3 };
             // Copy before removing: interrupted migration remains recoverable.
             await storage.set({ [key]: saved });
-            await storage.remove([legacyKey]);
+            await storage.remove([oldV2Key, legacyKey]);
           }
         }
+        if (saved && contextBinding(saved.context, saved.product) !== contextBinding(context, fresh)) saved = null;
         if (saved?.state === "completed") saved = null;
         if (!saved) {
           const ownerKey = `comprSearchCooldown:${scope}`;
@@ -110,7 +132,7 @@ const ComprApi = (() => {
           }
           currentCooldown = Date.now() + 10000; cooldowns.set(ownerKey, currentCooldown);
           if (storage) await storage.set({ [ownerKey]: currentCooldown });
-          saved = { version: 2, state: "pending", requestId, product: fresh, createdAt: Date.now() };
+          saved = { version: 3, state: "pending", requestId, product: fresh, context, createdAt: Date.now() };
         }
         // Preserve payload, confirmation and expiry while recovering an uncertain action.
         if (storage) await storage.set({ [key]: saved, [actionIndex(scope, saved.requestId)]: key });
@@ -166,6 +188,7 @@ const ComprApi = (() => {
   }
   return {
     acceptResult, safetyMessage, cooldownSeconds,
+    productFingerprint: product => binding(ComprProduct.toSearchPayload(product)),
     me: (options = {}) => request("/v1/me", options),
     createCheckout: (plan, requestId = crypto.randomUUID()) => request("/v1/billing/checkout", {
       method: "POST",

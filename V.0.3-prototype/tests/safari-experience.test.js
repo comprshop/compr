@@ -124,7 +124,7 @@ test("Safari auth failures return to the inline login state without bypassing au
   assert.doesNotMatch(popup,/if\(state\.view==="sign-in"\)\{const opened=await ComprAuth\.openAppleSignIn/);
   assert.match(popup,/confirmAccount\(\)[\s\S]*ComprAuth\.getSession\(\)[\s\S]*ComprApi\.me\(\{signal\}\)/);
   assert.ok(popup.indexOf("const me=await confirmAccount()")<popup.indexOf('store.set({view:"searching"'));
-  assert.match(popup,/ComprApi\.search\(product,crypto\.randomUUID\(\),\{signal\}\)/);
+  assert.match(popup,/ComprApi\.search\(actionProduct,crypto\.randomUUID\(\),\{signal,context:actionContext\}\)/);
   assert.match(popup,/30000,"SEARCH_TIMEOUT"/);
   assert.match(popup,/Sign in with Apple/);
 });

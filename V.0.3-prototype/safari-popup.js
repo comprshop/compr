@@ -82,7 +82,7 @@
       return ComprCurrency.format(converted===null?numeric:converted,converted===null?source:displayCurrency,countryCode);
     }
     [[ui.privacyBadge,"Private by default"],[ui.privacyLink,"Privacy"],[ui.matchLabel,"Verified cheaper match"],[ui.currentTotalLabel,"Current total"],[ui.dealTotalLabel,"Deal total"],[ui.trackLabel,"COMPR"],[ui.proTitle,"Choose your COMPR plan"],[ui.proCopy,"Find better prices. Choose how often you want to search."],[ui.planLegend,"Choose a billing period"],[ui.monthlyLabel,"Monthly"],[ui.yearlyLabel,"Yearly"],[ui.freeCurrent,"Current plan"],[ui.freeFeatureOne,"5 successful checks in your first month"],[ui.freeFeatureTwo,"3 successful checks per month after that"],[ui.popularLabel,"Popular"],[ui.proFeatureOne,"15 successful price checks per month"],[ui.proFeatureTwo,"For regular COMPR users"],[ui.ultimateFeatureOne,"50 successful price checks per month"],[ui.ultimateFeatureTwo,"For frequent price checking"],[ui.chooseFree,"Continue Free"],[ui.tryPro,"Choose Pro"],[ui.tryUltimate,"Choose Ultimate"],[ui.restore,"Restore Purchases"],[ui.notNow,"Not now"],[ui.renewalCopy,"Subscriptions renew automatically unless cancelled in your Apple Account."],[ui.save,"Save & Compare"],[ui.couponsToggle,"Coupons"],[ui.detailsToggle,"Details"],[ui.guidanceOne,"Open one specific product page"],[ui.guidanceTwo,"Wait until its price and options are visible"],[ui.guidanceThree,"Open COMPR again"],[ui.welcomeTitle,"One account. Clear choices."],[ui.welcomeFeatureOne,"Sign in securely with Apple"],[ui.welcomeFeatureTwo,"Choose monthly or yearly COMPR Pro"],[ui.welcomeFeatureThree,"Change or cancel later through Apple"]].forEach(([node,label])=>{if(node)node.textContent=tr(label);});
-    let product = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false;
+    let product = null, productContext = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false;
     const store = ComprSafariExperience.createStore(render);
     let cooldownTimer=null,safetyUntil=0;
     ui.image.addEventListener("error",()=>{ui.image.hidden=true;ui.image.parentElement.classList.add("missing-image");});
@@ -90,7 +90,7 @@
     function text(node, value) { node.textContent = tr(value) || ""; }
     function show(node, visible) { node.classList.toggle("hidden", !visible); }
     function showSignIn() {
-      product=null;match=null;
+      product=null;productContext=null;match=null;
       store.set({view:"sign-in",title:"Sign in to compare prices",copy:"COMPR uses your account to track price checks and recognise your plan and limit.",usageNote:"You only need to sign in once.",primary:"Sign in with Apple",product:null});
     }
     async function withRequestTimeout(run, milliseconds, code) {
@@ -203,18 +203,29 @@
       ui.details.append(dl);
     }
 
-    async function detectProduct(me) {
-      const generation=++actionGeneration;
-      try {
+    async function extractActiveProduct() {
         const [tab]=await ComprBrowser.tabs.query({active:true,currentWindow:true});
-        if (!tab?.id) return store.set({view:"unsupported",title:"This page isn't supported",copy:"Open a web product page to use COMPR.",primary:""});
+        if (!tab?.id) return null;
         const probe=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>globalThis.ComprBrowser?.adapterVersion==="compr-browser-adapter-v1"});
         if (probe?.[0]?.result!==true) await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},files:["shared/browserAdapter.js"]});
         await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},files:["shared/productEligibility.js","shared/localeParsing.js", "detectors/price.js","detectors/brand.js","detectors/color.js","detectors/material.js","detectors/sizes.js","detectors/availability.js","detectors/policies.js","detectors/discountCodes.js","detectors/category.js","detectors/productId.js","detectors/productName.js","content.js"]});
         const result=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>typeof getProductInfo==="function"?getProductInfo():null});
+        const extracted=result?.[0]?.result || null;
+        if (!ComprProductEligibility.isEligibleProductPayload(extracted)) return { tab, product: null, context: null };
+        const context={source:"safari-tab",tabId:tab.id,tabUrl:tab.url || extracted.url,
+          fingerprint:ComprApi.productFingerprint(extracted)};
+        return {tab,product:extracted,context};
+    }
+    function sameProductContext(left,right) {
+      return Boolean(left&&right&&left.tabId===right.tabId&&left.tabUrl===right.tabUrl&&left.fingerprint===right.fingerprint);
+    }
+    async function detectProduct(me) {
+      const generation=++actionGeneration;
+      try {
+        const detected=await extractActiveProduct();
         if (disposed || generation!==actionGeneration) return;
-        product=result?.[0]?.result;
-        if (!ComprProductEligibility.isEligibleProductPayload(product)) { product=null; store.set({view:"no-product",title:"Open a product page to compare prices.",copy:"COMPR refuses search results, listings and pages without strong product evidence.",primary:"",product:null}); return; }
+        product=detected?.product || null; productContext=detected?.context || null;
+        if (!product) { store.set({view:"no-product",title:"Open a product page to compare prices.",copy:"COMPR refuses search results, listings and pages without strong product evidence.",primary:"",product:null}); return; }
         const remaining=Number.isFinite(Number(me?.usage?.remaining)) ? `${me.usage.remaining} free checks left` : "";
         store.set({view:"ready",eyebrow:remaining,title:"Ready to compare",copy:"Exact product. Right variant. Total price.",primary:"Find this cheaper",product});
       } catch (error) {
@@ -225,16 +236,25 @@
     }
 
     async function search() {
-      if (!product) return;
+      if (!product || !productContext) return;
       const generation=++actionGeneration;
       ui.primary.disabled=true;
       try {
         const me=await confirmAccount();
         if(!me||disposed||generation!==actionGeneration)return;
-        store.set({view:"searching",title:"Checking trusted matches…",copy:"Comparing the same product, variant and total price.",primary:"Checking…",product,couponsOpen:false,detailsOpen:false,usageNote:""});
-        lastResponse=await withRequestTimeout(signal=>ComprApi.search(product,crypto.randomUUID(),{signal}),30000,"SEARCH_TIMEOUT");
+        const detected=await extractActiveProduct();
+        if(!detected?.product||!sameProductContext(productContext,detected.context)){
+          product=detected?.product||null;productContext=detected?.context||null;match=null;
+          if(product){store.set({view:"ready",eyebrow:Number.isFinite(Number(me?.usage?.remaining))?`${me.usage.remaining} free checks left`:"",title:"Ready to compare",copy:"The product page changed. Check the product and tap again.",primary:"Find this cheaper",product});}
+          else store.set({view:"no-product",title:"Open a product page to compare prices.",copy:"COMPR refuses search results, listings and pages without strong product evidence.",primary:"",product:null});
+          return;
+        }
+        product=detected.product;productContext=detected.context;
+        const actionProduct=product,actionContext=productContext;
+        store.set({view:"searching",title:"Checking trusted matches…",copy:"Comparing the same product, variant and total price.",primary:"Checking…",product:actionProduct,couponsOpen:false,detailsOpen:false,usageNote:""});
+        lastResponse=await withRequestTimeout(signal=>ComprApi.search(actionProduct,crypto.randomUUID(),{signal,context:actionContext}),30000,"SEARCH_TIMEOUT");
         if (disposed || generation!==actionGeneration) return;
-        match=ComprSafariExperience.selectVerifiedMatch(lastResponse, product);
+        match=ComprSafariExperience.selectVerifiedMatch(lastResponse, actionProduct);
         if (!match) { store.set({view:"no-match",eyebrow:"",title:"No reliable match",copy:"We’d rather show nothing than the wrong product.",usageNote:ComprSafariExperience.noMatchUsageNote(lastResponse),primary:"Try again",product,couponsOpen:false,detailsOpen:false}); return; }
         store.set({view:"match",eyebrow:"",title:"",copy:"",usageNote:"",primary:"View deal",product,match,coupons:ComprSafariExperience.verifiedCoupons(lastResponse,match),couponsOpen:false,detailsOpen:false});
         if (!disposed && generation===actionGeneration) void ComprApi.acceptResult(lastResponse);

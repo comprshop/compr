@@ -101,3 +101,37 @@ test('authoritative released recovery cleans legacy action; local rejection does
  const f=fixture(),a=f.api();await a.search(p,'one');assert.equal(f.pending().length,1);assert.equal(f.calls.filter(x=>x.url.endsWith('/accept')).length,0);
  f.setHandler(async()=>f.reply({error:{code:'NO_CONFIDENT_MATCH'}},404));await assert.rejects(f.api().search(p,'two'));assert.equal(f.pending().length,0);
 });
+test('stale Nike action is never recovered for a current Sony product context',async()=>{
+ const f=fixture(),a=f.api(),nike={name:'Nike Air Max 90',brand:'Nike',mpn:'CN8490-100',price:149.99,currency:'EUR',url:'https://nike.example/air-max-90'};
+ const sony={name:'Sony WH-CH520 Schwarz',brand:'Sony',model:'WH-CH520',color:'black',price:34.99,currency:'EUR',url:'https://smyths.example/sony-wh-ch520'};
+ f.setHandler(async()=>{throw Error('network');});
+ await assert.rejects(a.search(nike,'nike-request',{context:{source:'safari-tab',tabId:7,tabUrl:nike.url,fingerprint:a.productFingerprint(nike)}}));
+ f.clock.now+=11000;
+ f.setHandler(async(url,o)=>f.reply(f.result(JSON.parse(o.body).requestId)));
+ await a.search(sony,'sony-request',{context:{source:'safari-tab',tabId:7,tabUrl:sony.url,fingerprint:a.productFingerprint(sony)}});
+ assert.equal(f.calls.at(-1).body.requestId,'sony-request');assert.equal(f.calls.at(-1).body.product.name,sony.name);
+});
+test('same product and tab context safely recovers uncertain action',async()=>{
+ const f=fixture(),a=f.api(),context={source:'safari-tab',tabId:7,tabUrl:p.url,fingerprint:a.productFingerprint(p)};
+ f.setHandler(async()=>{throw Error('network');});await assert.rejects(a.search(p,'one',{context}));
+ f.setHandler(async(url,o)=>f.reply(f.result(JSON.parse(o.body).requestId)));await a.search(p,'two',{context});
+ assert.equal(f.calls.at(-1).body.requestId,'one');
+});
+test('different Safari tabs cannot share pending action state',async()=>{
+ const f=fixture(),a=f.api(),fingerprint=a.productFingerprint(p);
+ f.setHandler(async()=>{throw Error('network');});await assert.rejects(a.search(p,'tab-one',{context:{source:'safari-tab',tabId:1,tabUrl:p.url,fingerprint}}));
+ f.clock.now+=11000;
+ f.setHandler(async(url,o)=>f.reply(f.result(JSON.parse(o.body).requestId)));await a.search(p,'tab-two',{context:{source:'safari-tab',tabId:2,tabUrl:p.url,fingerprint}});
+ assert.equal(f.calls.at(-1).body.requestId,'tab-two');
+});
+test('displayed product fingerprint must match outgoing action context',async()=>{
+ const f=fixture(),a=f.api();
+ await assert.rejects(a.search(p,'one',{context:{source:'safari-tab',tabId:1,tabUrl:p.url,fingerprint:'stale'}}),{code:'SEARCH_CONTEXT_MISMATCH'});
+ assert.equal(f.calls.length,0);
+});
+test('Safari popup re-extracts the active tab immediately before transport',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../safari-popup.js'),'utf8');
+ assert.match(source,/const detected=await extractActiveProduct\(\)/);
+ assert.match(source,/sameProductContext\(productContext,detected\.context\)/);
+ assert.match(source,/ComprApi\.search\(actionProduct[^\n]+context:actionContext/);
+});
