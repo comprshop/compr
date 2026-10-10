@@ -1,5 +1,6 @@
 import SafariServices
 import StoreKit
+import Foundation
 
 final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     private let appGroup = "group.nl.getcompr.compr"
@@ -22,6 +23,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         }
 
         if action == "auth.session" { authSession(context); return }
+        if action == "auth.storeSession" { authStoreSession(context, message: message); return }
         if action == "auth.clear" { authClear(context); return }
         if action == "auth.openApp" { openApp(context); return }
 
@@ -57,6 +59,38 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     private func authClear(_ context: NSExtensionContext) {
         UserDefaults(suiteName: appGroup)?.removeObject(forKey: ComprNativeAuthConfig.sessionKey)
         complete(context, payload: ["ok": true])
+    }
+
+    private func authStoreSession(_ context: NSExtensionContext, message: [String: Any]) {
+        guard message["projectRef"] as? String == ComprNativeAuthConfig.projectRef,
+              let session = message["session"] as? [String: Any],
+              session["projectRef"] as? String == ComprNativeAuthConfig.projectRef,
+              let accessToken = session["access_token"] as? String,
+              session["refresh_token"] is String,
+              let expiry = (session["expires_at"] as? NSNumber)?.doubleValue,
+              expiry > Date().timeIntervalSince1970,
+              let subject = sandboxSubject(accessToken),
+              let suppliedUser = (session["user"] as? [String: Any])?["id"] as? String,
+              subject == suppliedUser,
+              let defaults = UserDefaults(suiteName: appGroup) else {
+            complete(context, payload: ["ok": false, "code": "AUTH_SESSION_REJECTED"])
+            return
+        }
+        defaults.set(session, forKey: ComprNativeAuthConfig.sessionKey)
+        complete(context, payload: ["ok": true])
+    }
+
+    private func sandboxSubject(_ token: String) -> String? {
+        let parts = token.split(separator: ".")
+        guard parts.count == 3 else { return nil }
+        var encoded = String(parts[1]).replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        encoded += String(repeating: "=", count: (4 - encoded.count % 4) % 4)
+        guard let data = Data(base64Encoded: encoded),
+              let claims = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              claims["iss"] as? String == ComprNativeAuthConfig.url + "/auth/v1",
+              let subject = claims["sub"] as? String,
+              UUID(uuidString: subject) != nil else { return nil }
+        return subject
     }
 
     private func openApp(_ context: NSExtensionContext) {

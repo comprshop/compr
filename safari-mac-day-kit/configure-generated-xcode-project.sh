@@ -64,7 +64,7 @@ grep -Fq "let extensionBundleIdentifier = \"$extension_id\"" "$view_controller" 
 pass "container extension identifier: $extension_id"
 grep -Fq 'NATIVE_ACTION_UNAVAILABLE' "$extension_handler" \
   || fail 'safe native extension handler was not configured'
-for action in auth.openApp auth.session auth.clear billing.products billing.purchase billing.restore billing.finish; do
+for action in auth.openApp auth.session auth.storeSession auth.clear billing.products billing.purchase billing.restore billing.finish; do
   grep -Fq "\"$action\"" "$extension_handler" \
     || fail "native extension handler is missing required action: $action"
 done

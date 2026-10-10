@@ -141,10 +141,12 @@ test("generated Xcode configuration preserves native Apple auth and StoreKit bri
   const handler = fs.readFileSync(path.join(root, "safari-mac-day-kit", "container-app", "SafariWebExtensionHandler.swift"), "utf8");
   const sceneDelegate = fs.readFileSync(path.join(root, "safari-mac-day-kit", "container-app", "SceneDelegate.swift"), "utf8");
   const configure = fs.readFileSync(path.join(root, "safari-mac-day-kit", "configure-generated-xcode-project.sh"), "utf8");
-  for (const action of ["auth.openApp", "auth.session", "auth.clear", "billing.products", "billing.purchase", "billing.restore", "billing.finish"]) {
+  for (const action of ["auth.openApp", "auth.session", "auth.storeSession", "auth.clear", "billing.products", "billing.purchase", "billing.restore", "billing.finish"]) {
     assert.match(handler, new RegExp(action.replace(".", "\\.")));
     assert.match(configure, new RegExp(action.replace(".", "\\.")));
   }
+  assert.match(handler, /AUTH_SESSION_REJECTED/);
+  assert.match(handler, /claims\["iss"\].*ComprNativeAuthConfig\.url/);
   for (const productId of ["nl.getcompr.pro.monthly", "nl.getcompr.pro.yearly",
     "nl.getcompr.ultimate.monthly", "nl.getcompr.ultimate.yearly"]) {
     assert.match(handler, new RegExp(productId.replaceAll(".", "\\.")));

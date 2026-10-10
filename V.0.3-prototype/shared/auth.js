@@ -82,6 +82,9 @@ const ComprAuth = (() => {
     if (!safe) throw new Error("INVALID_AUTH_SESSION");
     if (expectedGeneration !== sessionGeneration) throw new Error("STALE_AUTH_SESSION");
     await ComprBrowser.storage.local.set({ [SESSION_KEY]: safe });
+    if (projectRef && ComprRuntimeConfig.platform === "safari") {
+      await sendNative({ action: "auth.storeSession", projectRef, session: safe }).catch(() => null);
+    }
     return safe;
   }
 
