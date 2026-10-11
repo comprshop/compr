@@ -2,6 +2,14 @@
   "use strict";
   let started = false;
 
+  function tabLocation(tab) {
+    return tab?.id ? { tabId: tab.id, tabUrl: String(tab.url || "") } : null;
+  }
+  function sameTabLocation(left, right) {
+    const current=tabLocation(right);
+    return Boolean(left&&current&&left.tabId===current.tabId&&left.tabUrl===current.tabUrl);
+  }
+
   async function start() {
     if (started) return false;
     started = true;
@@ -82,7 +90,7 @@
       return ComprCurrency.format(converted===null?numeric:converted,converted===null?source:displayCurrency,countryCode);
     }
     [[ui.privacyBadge,"Private by default"],[ui.privacyLink,"Privacy"],[ui.matchLabel,"Verified cheaper match"],[ui.currentTotalLabel,"Current total"],[ui.dealTotalLabel,"Deal total"],[ui.trackLabel,"COMPR"],[ui.proTitle,"Choose your COMPR plan"],[ui.proCopy,"Find better prices. Choose how often you want to search."],[ui.planLegend,"Choose a billing period"],[ui.monthlyLabel,"Monthly"],[ui.yearlyLabel,"Yearly"],[ui.freeCurrent,"Current plan"],[ui.freeFeatureOne,"5 successful checks in your first month"],[ui.freeFeatureTwo,"3 successful checks per month after that"],[ui.popularLabel,"Popular"],[ui.proFeatureOne,"15 successful price checks per month"],[ui.proFeatureTwo,"For regular COMPR users"],[ui.ultimateFeatureOne,"50 successful price checks per month"],[ui.ultimateFeatureTwo,"For frequent price checking"],[ui.chooseFree,"Continue Free"],[ui.tryPro,"Choose Pro"],[ui.tryUltimate,"Choose Ultimate"],[ui.restore,"Restore Purchases"],[ui.notNow,"Not now"],[ui.renewalCopy,"Subscriptions renew automatically unless cancelled in your Apple Account."],[ui.save,"Save & Compare"],[ui.couponsToggle,"Coupons"],[ui.detailsToggle,"Details"],[ui.guidanceOne,"Open one specific product page"],[ui.guidanceTwo,"Wait until its price and options are visible"],[ui.guidanceThree,"Open COMPR again"],[ui.welcomeTitle,"One account. Clear choices."],[ui.welcomeFeatureOne,"Sign in securely with Apple"],[ui.welcomeFeatureTwo,"Choose monthly or yearly COMPR Pro"],[ui.welcomeFeatureThree,"Change or cancel later through Apple"]].forEach(([node,label])=>{if(node)node.textContent=tr(label);});
-    let product = null, productContext = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false;
+    let product = null, productContext = null, observedTab = null, account = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false, initialized = false, refreshPromise = null;
     const store = ComprSafariExperience.createStore(render);
     let cooldownTimer=null,safetyUntil=0;
     ui.image.addEventListener("error",()=>{ui.image.hidden=true;ui.image.parentElement.classList.add("missing-image");});
@@ -224,6 +232,7 @@
       try {
         const detected=await extractActiveProduct();
         if (disposed || generation!==actionGeneration) return;
+        observedTab=tabLocation(detected?.tab);
         product=detected?.product || null; productContext=detected?.context || null;
         if (!product) { store.set({view:"no-product",title:"Open a product page to compare prices.",copy:"COMPR refuses search results, listings and pages without strong product evidence.",primary:"",product:null}); return; }
         const remaining=Number.isFinite(Number(me?.usage?.remaining)) ? `${me.usage.remaining} free checks left` : "";
@@ -233,6 +242,27 @@
         const permission=error?.capability==="scripting.executeScript";
         store.set({view:permission?"permission-required":"unsupported",title:permission?"Allow COMPR on this site":"This page isn't supported",copy:permission?"Grant access for this website, then reopen COMPR.":"Open a web product page to use COMPR.",primary:""});
       }
+    }
+
+    async function refreshAfterTabNavigation() {
+      if(disposed||!initialized||store.get().view==="searching"||refreshPromise)return refreshPromise;
+      refreshPromise=(async()=>{
+        const [tab]=await ComprBrowser.tabs.query({active:true,currentWindow:true});
+        if(!tab?.id||sameTabLocation(observedTab,tab))return;
+        actionGeneration+=1;
+        observedTab=tabLocation(tab);
+        product=null;productContext=null;match=null;lastResponse=null;
+        store.set({view:"guest-initializing",title:"Starting COMPR…",copy:"Preparing the current product page.",primary:"",product:null});
+        const me=account||await confirmAccount();
+        if(!me||disposed)return;
+        account=me;
+        await detectProduct(me);
+      })().catch(error=>{
+        if(disposed)return;
+        const permission=error?.capability==="scripting.executeScript";
+        store.set({view:permission?"permission-required":"unsupported",title:permission?"Allow COMPR on this site":"This page isn't supported",copy:permission?"Grant access for this website, then reopen COMPR.":"Open a web product page to use COMPR.",primary:"",product:null});
+      }).finally(()=>{refreshPromise=null;});
+      return refreshPromise;
     }
 
     async function search() {
@@ -289,6 +319,7 @@
         if(!session){showSignIn();return;}
         const me=await confirmAccount();
         if(!me||disposed)return;
+        account=me;
         void ComprCurrency.requestExchangeRates().then(rates=>{exchangeRates=rates;}).catch(()=>{});
         await detectProduct(me);
       }
@@ -394,10 +425,13 @@
     ui.restore.addEventListener("click",restorePurchases);
     ui.notNow.addEventListener("click",closeProSheet);
     ui.proSheet.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();closeProSheet();return;}if(event.key!=="Tab")return;const focusable=[ui.planMonthly,ui.planYearly,ui.chooseFree,ui.tryPro,ui.tryUltimate,ui.restore,ui.privacyLink,ui.notNow].filter(node=>!node.disabled);const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}});
+    window.addEventListener("focus",()=>{void refreshAfterTabNavigation();});
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refreshAfterTabNavigation();});
     window.addEventListener("pagehide",()=>{disposed=true;actionGeneration+=1;clearTimeout(cooldownTimer);},{once:true});
     await initialize();
+    initialized=true;
     if(new URL(window.location.href).searchParams.get("plans")==="1")openProSheet();
     return true;
   }
-  root.ComprSafariPopup={start};
+  root.ComprSafariPopup={start,tabLocation,sameTabLocation};
 })(typeof globalThis!=="undefined"?globalThis:this);
