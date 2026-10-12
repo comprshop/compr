@@ -26,6 +26,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         if action == "auth.storeSession" { authStoreSession(context, message: message); return }
         if action == "auth.clear" { authClear(context); return }
         if action == "auth.openApp" { openApp(context); return }
+        if action == "diagnostic.product" { recordProductDiagnostic(context, message: message); return }
 
         guard #available(iOS 15.0, macOS 12.0, *) else {
             complete(context, payload: ["ok": false, "code": "STOREKIT_UNAVAILABLE"])
@@ -96,6 +97,25 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     private func openApp(_ context: NSExtensionContext) {
         guard let url = URL(string: "compr://signin") else { complete(context, payload: ["ok": false]); return }
         context.open(url) { opened in self.complete(context, payload: ["ok": opened]) }
+    }
+
+    private func recordProductDiagnostic(_ context: NSExtensionContext, message: [String: Any]) {
+        guard message["projectRef"] as? String == ComprNativeAuthConfig.projectRef,
+              let diagnostic = message["diagnostic"] as? [String: Any],
+              JSONSerialization.isValidJSONObject(diagnostic),
+              let data = try? JSONSerialization.data(withJSONObject: diagnostic, options: [.sortedKeys]),
+              data.count <= 32_768,
+              let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)
+        else {
+            complete(context, payload: ["ok": false, "code": "DIAGNOSTIC_REJECTED"])
+            return
+        }
+        do {
+            try data.write(to: container.appendingPathComponent("compr-product-diagnostic.json"), options: .atomic)
+            complete(context, payload: ["ok": true])
+        } catch {
+            complete(context, payload: ["ok": false, "code": "DIAGNOSTIC_WRITE_FAILED"])
+        }
     }
 
     @available(iOS 15.0, macOS 12.0, *)

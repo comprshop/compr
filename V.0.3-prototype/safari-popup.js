@@ -93,9 +93,9 @@
       ["Open a product page to compare prices.","Open een productpagina om prijzen te vergelijken."],
       ["Open one specific product page","Open één specifieke productpagina"],["Wait until its price and options are visible","Wacht tot de prijs en opties zichtbaar zijn"],["Open COMPR again","Open COMPR opnieuw"],
       ["COMPR refuses search results, listings and pages without strong product evidence.","COMPR controleert alleen duidelijke productpagina’s, geen zoekresultaten of categoriepagina’s."],
-      ["Ready to compare","Klaar om te vergelijken"],["Exact product. Right variant. Total price.","Hetzelfde product, de juiste uitvoering en de totaalprijs."],
+      ["Ready to compare","Klaar om te vergelijken"],["Same product. Total price.","We vergelijken hetzelfde product en de totale prijs."],
       ["Find this cheaper","Vind dit goedkoper"],["Checking trusted matches…","Betrouwbare matches controleren…"],
-      ["Comparing the same product, variant and total price.","We vergelijken hetzelfde product, de uitvoering en de totaalprijs."],
+      ["Comparing the same product and total price.","We vergelijken hetzelfde product en de totale prijs."],
       ["Checking…","Controleren…"],["No reliable match","Geen betrouwbare match"],
       ["We’d rather show nothing than the wrong product.","Dan is er geen beter betrouwbaar product gevonden."],
       ["Try again","Opnieuw proberen"],["View deal","Bekijk aanbieding"],["What COMPR checked","Wat COMPR controleerde"],
@@ -263,22 +263,58 @@
       ui.details.append(dl);
     }
 
+    function safeProductDiagnostic(stage,tab,details={}) {
+      const diagnostic={version:1,stage:String(stage||"unknown").slice(0,80),recordedAt:new Date().toISOString(),
+        projectRef:String(ComprRuntimeConfig.authProjectRef||"").slice(0,32),tabId:Number.isInteger(tab?.id)?tab.id:null,
+        tabUrl:String(tab?.url||"").slice(0,600),details};
+      void ComprBrowser.runtime.sendNativeMessage("nl.getcompr.compr",{action:"diagnostic.product",
+        projectRef:ComprRuntimeConfig.authProjectRef||"",diagnostic}).catch(()=>null);
+      return diagnostic;
+    }
     async function extractActiveProduct() {
         const [tab]=await ComprBrowser.tabs.query({active:true,currentWindow:true});
-        if (!tab?.id) return null;
+        if (!tab?.id) { safeProductDiagnostic("active_tab_missing",null); return null; }
+        safeProductDiagnostic("active_tab_resolved",tab);
+        try {
         const probe=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>globalThis.ComprBrowser?.adapterVersion==="compr-browser-adapter-v1"});
         if (probe?.[0]?.result!==true) await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},files:["shared/browserAdapter.js"]});
         await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},files:["shared/productEligibility.js","shared/localeParsing.js", "detectors/price.js","detectors/brand.js","detectors/color.js","detectors/material.js","detectors/sizes.js","detectors/availability.js","detectors/policies.js","detectors/discountCodes.js","detectors/category.js","detectors/productId.js","detectors/productName.js","content.js"]});
         const result=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>typeof getProductInfo==="function"?getProductInfo():null});
         const extracted=result?.[0]?.result || null;
+        const diagnosticResult=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>({
+          eligibility:globalThis.__comprLastEligibilityDiagnostics||null,
+          readyState:String(document.readyState||"unknown"),title:String(document.title||"").slice(0,240),
+          h1:String(document.querySelector("h1")?.innerText||"").trim().slice(0,240),
+          productMeta:Boolean(document.querySelector('meta[property="product:price:amount"], meta[property="og:price:amount"], meta[itemprop="price"]')),
+          jsonLdBlocks:document.querySelectorAll('script[type="application/ld+json"]').length
+        })});
+        const page=diagnosticResult?.[0]?.result||{};
+        safeProductDiagnostic(extracted?"extraction_returned_product":"extraction_returned_empty",tab,{
+          eligibility:page.eligibility||null,readyState:page.readyState||"unknown",documentTitle:page.title||"",h1:page.h1||"",
+          productMeta:page.productMeta===true,jsonLdBlocks:Number(page.jsonLdBlocks||0),
+          product:extracted?{name:String(extracted.name||"").slice(0,240),price:String(extracted.price||"").slice(0,80),
+            currency:String(extracted.currency||"").slice(0,12),image:String(extracted.image||"").slice(0,600),
+            webshop:String(extracted.webshop||"").slice(0,180),url:String(extracted.url||"").slice(0,600),
+            gtin:String(extracted.gtin||"").slice(0,64),mpn:String(extracted.mpn||"").slice(0,64),
+            productCode:String(extracted.productCode||"").slice(0,64),category:String(extracted.category||"").slice(0,100)}:null
+        });
         if(extracted)console.info('[COMPR_VARIANT_DIAGNOSTIC]',{selectedSize:extracted.selectedSize || null,
           size:extracted.size || null,sizeRequired:extracted.sizeRequired===true,
           selectedVariants:root.ComprProduct.normalizeSelectedVariants(extracted),
           evidence:extracted.selectedVariantDiagnostics?.size?.evidence || null});
-        if (!ComprProductEligibility.isEligibleProductPayload(extracted)) return { tab, product: null, context: null };
+        if (!ComprProductEligibility.isEligibleProductPayload(extracted)) {
+          safeProductDiagnostic("payload_rejected",tab,{eligibility:page.eligibility||null});
+          return { tab, product: null, context: null };
+        }
         const context={source:"safari-tab",tabId:tab.id,tabUrl:tab.url || extracted.url,
           fingerprint:ComprApi.productFingerprint(extracted)};
+        safeProductDiagnostic("payload_accepted",tab,{fingerprint:context.fingerprint,productName:String(extracted.name||"").slice(0,240)});
         return {tab,product:extracted,context};
+        } catch(error) {
+          safeProductDiagnostic("extraction_error",tab,{code:String(error?.code||"EXTENSION_API_FAILED").slice(0,80),
+            capability:String(error?.capability||"").slice(0,80)});
+          throw error;
+        }
     }
     function sameProductContext(left,right) {
       return Boolean(left&&right&&left.tabId===right.tabId&&left.tabUrl===right.tabUrl&&left.fingerprint===right.fingerprint);
@@ -292,7 +328,7 @@
         product=detected?.product || null; productContext=detected?.context || null;
         if (!product) { store.set({view:"no-product",title:"Open a product page to compare prices.",copy:"COMPR refuses search results, listings and pages without strong product evidence.",primary:"",product:null}); return; }
         const remaining=Number.isFinite(Number(me?.usage?.remaining)) ? `${me.usage.remaining} free checks left` : "";
-        store.set({view:"ready",eyebrow:remaining,title:"Ready to compare",copy:"Exact product. Right variant. Total price.",primary:"Find this cheaper",product});
+        store.set({view:"ready",eyebrow:remaining,title:"Ready to compare",copy:"Same product. Total price.",primary:"Find this cheaper",product});
       } catch (error) {
         if (disposed || generation!==actionGeneration) return;
         if(error?.code==="PRODUCT_TIMEOUT"){
@@ -352,7 +388,7 @@
         }
         product=detected.product;productContext=detected.context;
         const actionProduct=product,actionContext=productContext;
-        store.set({view:"searching",title:"Checking trusted matches…",copy:"Comparing the same product, variant and total price.",primary:"Checking…",product:actionProduct,couponsOpen:false,detailsOpen:false,usageNote:""});
+        store.set({view:"searching",title:"Checking trusted matches…",copy:"Comparing the same product and total price.",primary:"Checking…",product:actionProduct,couponsOpen:false,detailsOpen:false,usageNote:""});
         lastResponse=await withRequestTimeout(signal=>ComprApi.search(actionProduct,crypto.randomUUID(),{signal,context:actionContext}),30000,"SEARCH_TIMEOUT");
         if (disposed || generation!==actionGeneration) return;
         match=ComprSafariExperience.selectVerifiedMatch(lastResponse, actionProduct);

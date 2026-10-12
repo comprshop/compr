@@ -137,6 +137,19 @@ test('Safari polish removes the retired privacy badge and localizes loading copy
  assert.match(source,/return ComprI18n\.translate\(input,"nl"\)/);
 });
 
+test('comparison copy never claims that every variant is proven',()=>{
+ assert.match(source,/"Same product\. Total price\.","We vergelijken hetzelfde product en de totale prijs\."/);
+ assert.doesNotMatch(source,/de juiste uitvoering|same product, variant and total price|Right variant/);
+});
+
+test('physical extraction diagnostics persist the first safe rejection stage without search',()=>{
+ assert.match(source,/action:"diagnostic\.product"/);
+ assert.match(source,/"extraction_returned_empty"/);
+ assert.match(source,/"payload_rejected"/);
+ assert.match(source,/eligibility:page\.eligibility\|\|null/);
+ assert.doesNotMatch(source,/safeProductDiagnostic[\s\S]{0,500}ComprApi\.search/);
+});
+
 test('product extraction has a bounded human retry state without starting a search',()=>{
  assert.match(source,/withUiTimeout\(\(\)=>extractActiveProduct\(\),8000,"PRODUCT_TIMEOUT"\)/);
  assert.match(source,/view:"product-error"[^\n]+primary:"Try again"/);
