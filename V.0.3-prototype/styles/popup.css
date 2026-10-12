@@ -1135,7 +1135,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .app.safari-mode { min-height:0; padding:14px max(12px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); }
 .safari-experience { min-width: 0; color: var(--compr-text); }
 .safari-header { display:flex; align-items:center; justify-content:space-between; min-height:44px; margin-bottom:12px; }
-.safari-header > span { color:var(--compr-muted); font-size:11px; }
 .safari-brand { display:flex; align-items:center; gap:8px; font-size:17px; letter-spacing:-.3px; }
 .safari-brand img { width:32px; height:32px; border-radius:9px; clip-path:inset(1px round 8px); image-rendering:auto; }
 .safari-panel { padding:18px; overflow:hidden; border:1px solid var(--compr-border); border-radius:22px; background:var(--compr-surface); box-shadow:0 12px 34px rgba(30,27,62,.075); }
@@ -1324,18 +1323,6 @@ html.safari-popup .safari-header {
 html.safari-popup .safari-brand { gap:9px; font-size:19px; }
 html.safari-popup .safari-brand img { width:36px; height:36px; border-radius:10px; background:#fff; box-shadow:none; filter:none; }
 html.safari-popup .safari-brand strong { color:var(--compr-text); font-weight:800; }
-html.safari-popup .safari-header>span {
-  max-width:52%;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  color:var(--compr-muted);
-  font-size:11px;
-  font-weight:650;
-  line-height:1.15;
-  text-align:center;
-}
 html.safari-popup .safari-panel {
   padding:8px 2px 4px;
   border:0;

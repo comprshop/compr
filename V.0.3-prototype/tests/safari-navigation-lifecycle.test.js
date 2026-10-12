@@ -49,3 +49,24 @@ test('pre-send fail-closed context binding remains active',()=>{
  assert.match(source,/!sameProductContext\(productContext,detected\.context\)/);
  assert.match(source,/ComprApi\.search\(actionProduct[^\n]+context:actionContext/);
 });
+
+test('Safari polish removes the retired privacy badge and localizes loading copy centrally',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'../popup.html'),'utf8');
+ const preview=fs.readFileSync(path.join(__dirname,'../preview/safari-mobile.html'),'utf8');
+ const i18nSource=fs.readFileSync(path.join(__dirname,'../shared/i18n.js'),'utf8');
+ assert.doesNotMatch(html,/Private by default|safariPrivacyBadge/);
+ assert.doesNotMatch(preview,/Private by default/);
+ assert.doesNotMatch(source,/Privé, tenzij jij start|Preparing a private guest session/);
+ const i18nContext={globalThis:{},document:{addEventListener(){}},navigator:{language:'nl-NL'},Intl,MutationObserver:class{},NodeFilter:{SHOW_TEXT:4}};
+ i18nContext.globalThis=i18nContext;vm.createContext(i18nContext);vm.runInContext(i18nSource,i18nContext);
+ assert.equal(i18nContext.ComprI18n.translate('Preparing the current product page.','nl'),'Productpagina voorbereiden…');
+ assert.equal(i18nContext.ComprI18n.translate('The product page took too long to load.','nl'),'De productpagina reageert te langzaam.');
+ assert.match(source,/return ComprI18n\.translate\(input,"nl"\)/);
+});
+
+test('product extraction has a bounded human retry state without starting a search',()=>{
+ assert.match(source,/withUiTimeout\(\(\)=>extractActiveProduct\(\),8000,"PRODUCT_TIMEOUT"\)/);
+ assert.match(source,/view:"product-error"[^\n]+primary:"Try again"/);
+ assert.match(source,/\["offline","account-error","startup-error","product-error"\]/);
+ assert.doesNotMatch(source,/product-error[^\n]+ComprApi\.search/);
+});

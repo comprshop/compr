@@ -27,7 +27,7 @@
     const displayCurrency = ComprCurrency.getCurrencyForCountry(countryCode);
     let exchangeRates = { rates: { EUR: 1 } };
     const nl = new Map([
-      ["Private by default","Privé, tenzij jij start"],["Verified cheaper match","Betrouwbare goedkopere match"],
+      ["Verified cheaper match","Betrouwbare goedkopere match"],
       ["Current total","Huidig totaal"],["Current price","Huidige prijs"],["Deal total","Nieuw totaal"],["Track this price","Volg deze prijs"],
       ["Save products and get notified when their price drops.","Bewaar producten en krijg bericht wanneer de prijs daalt."],
       ["Choose your COMPR plan","Kies je COMPR-abonnement"],["Find better prices. Choose how often you want to search.","Vind betere prijzen. Kies hoe vaak je wilt zoeken."],
@@ -45,7 +45,6 @@
       ["Your COMPR Pro subscription is active.","Je COMPR Pro-abonnement is actief."],["Your COMPR Ultimate subscription is active.","Je COMPR Ultimate-abonnement is actief."],["Your COMPR subscription is active.","Je COMPR-abonnement is actief."],["Purchase pending approval.","De aankoop wacht op goedkeuring."],
       ["We couldn't complete the App Store request.","De App Store-aanvraag kon niet worden afgerond."],
       ["Details","Details"],["Coupons","Kortingscodes"],["Save & Compare","Bewaar en vergelijk"],
-      ["Starting COMPR…","COMPR starten…"],["Preparing a private guest session.","Je privésessie wordt voorbereid."],
       ["Open a product page to compare prices.","Open een productpagina om prijzen te vergelijken."],
       ["Open one specific product page","Open één specifieke productpagina"],["Wait until its price and options are visible","Wacht tot de prijs en opties zichtbaar zijn"],["Open COMPR again","Open COMPR opnieuw"],
       ["COMPR refuses search results, listings and pages without strong product evidence.","COMPR controleert alleen duidelijke productpagina’s, geen zoekresultaten of categoriepagina’s."],
@@ -80,7 +79,7 @@
       dynamic=input.match(/^Save at least (.+)$/); if(dynamic) return `Bespaar minimaal ${dynamic[1]}`;
       dynamic=input.match(/^Save (.+)$/); if(dynamic) return `Bespaar ${dynamic[1]}`;
       dynamic=input.match(/^Coupons · (\d+)$/); if(dynamic) return `Kortingscodes · ${dynamic[1]}`;
-      return input;
+      return ComprI18n.translate(input,"nl");
     }
     function localMoney(amount, sourceCurrency) {
       const numeric=ComprCurrency.parseAmount(amount);
@@ -89,7 +88,7 @@
       const converted=ComprCurrency.convert(numeric,source,displayCurrency,exchangeRates.rates);
       return ComprCurrency.format(converted===null?numeric:converted,converted===null?source:displayCurrency,countryCode);
     }
-    [[ui.privacyBadge,"Private by default"],[ui.privacyLink,"Privacy"],[ui.matchLabel,"Verified cheaper match"],[ui.currentTotalLabel,"Current total"],[ui.dealTotalLabel,"Deal total"],[ui.trackLabel,"COMPR"],[ui.proTitle,"Choose your COMPR plan"],[ui.proCopy,"Find better prices. Choose how often you want to search."],[ui.planLegend,"Choose a billing period"],[ui.monthlyLabel,"Monthly"],[ui.yearlyLabel,"Yearly"],[ui.freeCurrent,"Current plan"],[ui.freeFeatureOne,"5 successful checks in your first month"],[ui.freeFeatureTwo,"3 successful checks per month after that"],[ui.popularLabel,"Popular"],[ui.proFeatureOne,"15 successful price checks per month"],[ui.proFeatureTwo,"For regular COMPR users"],[ui.ultimateFeatureOne,"50 successful price checks per month"],[ui.ultimateFeatureTwo,"For frequent price checking"],[ui.chooseFree,"Continue Free"],[ui.tryPro,"Choose Pro"],[ui.tryUltimate,"Choose Ultimate"],[ui.restore,"Restore Purchases"],[ui.notNow,"Not now"],[ui.renewalCopy,"Subscriptions renew automatically unless cancelled in your Apple Account."],[ui.save,"Save & Compare"],[ui.couponsToggle,"Coupons"],[ui.detailsToggle,"Details"],[ui.guidanceOne,"Open one specific product page"],[ui.guidanceTwo,"Wait until its price and options are visible"],[ui.guidanceThree,"Open COMPR again"],[ui.welcomeTitle,"One account. Clear choices."],[ui.welcomeFeatureOne,"Sign in securely with Apple"],[ui.welcomeFeatureTwo,"Choose monthly or yearly COMPR Pro"],[ui.welcomeFeatureThree,"Change or cancel later through Apple"]].forEach(([node,label])=>{if(node)node.textContent=tr(label);});
+    [[ui.privacyLink,"Privacy"],[ui.matchLabel,"Verified cheaper match"],[ui.currentTotalLabel,"Current total"],[ui.dealTotalLabel,"Deal total"],[ui.trackLabel,"COMPR"],[ui.proTitle,"Choose your COMPR plan"],[ui.proCopy,"Find better prices. Choose how often you want to search."],[ui.planLegend,"Choose a billing period"],[ui.monthlyLabel,"Monthly"],[ui.yearlyLabel,"Yearly"],[ui.freeCurrent,"Current plan"],[ui.freeFeatureOne,"5 successful checks in your first month"],[ui.freeFeatureTwo,"3 successful checks per month after that"],[ui.popularLabel,"Popular"],[ui.proFeatureOne,"15 successful price checks per month"],[ui.proFeatureTwo,"For regular COMPR users"],[ui.ultimateFeatureOne,"50 successful price checks per month"],[ui.ultimateFeatureTwo,"For frequent price checking"],[ui.chooseFree,"Continue Free"],[ui.tryPro,"Choose Pro"],[ui.tryUltimate,"Choose Ultimate"],[ui.restore,"Restore Purchases"],[ui.notNow,"Not now"],[ui.renewalCopy,"Subscriptions renew automatically unless cancelled in your Apple Account."],[ui.save,"Save & Compare"],[ui.couponsToggle,"Coupons"],[ui.detailsToggle,"Details"],[ui.guidanceOne,"Open one specific product page"],[ui.guidanceTwo,"Wait until its price and options are visible"],[ui.guidanceThree,"Open COMPR again"],[ui.welcomeTitle,"One account. Clear choices."],[ui.welcomeFeatureOne,"Sign in securely with Apple"],[ui.welcomeFeatureTwo,"Choose monthly or yearly COMPR Pro"],[ui.welcomeFeatureThree,"Change or cancel later through Apple"]].forEach(([node,label])=>{if(node)node.textContent=tr(label);});
     let product = null, productContext = null, observedTab = null, account = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false, initialized = false, refreshPromise = null;
     const store = ComprSafariExperience.createStore(render);
     let cooldownTimer=null,safetyUntil=0;
@@ -106,6 +105,12 @@
       const timer=setTimeout(()=>controller.abort(),milliseconds);
       try{return await run(controller.signal);}
       catch(error){if(controller.signal.aborted){const timeoutError=new Error(code);timeoutError.code=code;throw timeoutError;}throw error;}
+      finally{clearTimeout(timer);}
+    }
+    async function withUiTimeout(run, milliseconds, code) {
+      let timer;
+      const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const error=new Error(code);error.code=code;reject(error);},milliseconds);});
+      try{return await Promise.race([Promise.resolve().then(run),timeout]);}
       finally{clearTimeout(timer);}
     }
     async function confirmAccount() {
@@ -126,7 +131,7 @@
       const hasResult = (state.view === "match" || state.view === "saved") && Boolean(ComprSafariExperience.validatedRetailer(state.match));
       const canSave=Boolean(state.product)&&["ready","match","saved","no-match"].includes(state.view);
       show(ui.guidance,state.view==="no-product");
-      const compactWithoutProduct=["quota","offline","provider-error","timeout"].includes(state.view);
+      const compactWithoutProduct=["quota","offline","provider-error","timeout","product-error"].includes(state.view);
       show(ui.product, Boolean(state.product) && !compactWithoutProduct); show(ui.savings, hasResult);
       show(ui.welcome,state.view==="sign-in"); show(ui.planAction,state.view!=="sign-in"&&!busy);
       if(ui.planAction)ui.planAction.textContent=tr(["pro","ultimate"].includes(entitlement.plan)?"Manage subscription":"View plans");
@@ -148,7 +153,7 @@
         cooldownTimer=setTimeout(()=>{if(!disposed)render(store.get());},Math.min(wait*1000,1000));
       }
       show(ui.primary, Boolean(state.primary)&&!signingIn); text(ui.primary, state.primary);
-      ui.primary.classList.toggle("is-retry",["no-match","offline","provider-error","timeout"].includes(state.view));
+      ui.primary.classList.toggle("is-retry",["no-match","offline","provider-error","timeout","product-error"].includes(state.view));
       text(ui.eyebrow, state.eyebrow); text(ui.title, state.title); text(ui.copy, state.view==='safety-limit' ? wait>0 ? `Try again in ${wait} seconds.` : 'Try again' : state.copy);
       text(ui.live, `${state.title || ""} ${state.copy || ""}`.trim());
       show(ui.privacy,state.view === "ready"); ui.privacy.textContent = tr("Nothing is checked until you tap.");
@@ -227,10 +232,10 @@
     function sameProductContext(left,right) {
       return Boolean(left&&right&&left.tabId===right.tabId&&left.tabUrl===right.tabUrl&&left.fingerprint===right.fingerprint);
     }
-    async function detectProduct(me) {
+    async function detectProduct(me, extractionPromise=null) {
       const generation=++actionGeneration;
       try {
-        const detected=await extractActiveProduct();
+        const detected=await (extractionPromise||withUiTimeout(()=>extractActiveProduct(),8000,"PRODUCT_TIMEOUT"));
         if (disposed || generation!==actionGeneration) return;
         observedTab=tabLocation(detected?.tab);
         product=detected?.product || null; productContext=detected?.context || null;
@@ -239,6 +244,11 @@
         store.set({view:"ready",eyebrow:remaining,title:"Ready to compare",copy:"Exact product. Right variant. Total price.",primary:"Find this cheaper",product});
       } catch (error) {
         if (disposed || generation!==actionGeneration) return;
+        if(error?.code==="PRODUCT_TIMEOUT"){
+          product=null;productContext=null;match=null;
+          store.set({view:"product-error",title:"The product page took too long to load.",copy:"Reload the product page and try again.",primary:"Try again",product:null});
+          return;
+        }
         const permission=error?.capability==="scripting.executeScript";
         store.set({view:permission?"permission-required":"unsupported",title:permission?"Allow COMPR on this site":"This page isn't supported",copy:permission?"Grant access for this website, then reopen COMPR.":"Open a web product page to use COMPR.",primary:""});
       }
@@ -311,17 +321,19 @@
     }
 
     async function initialize() {
-      store.set({view:"guest-initializing",title:"Starting COMPR…",copy:"Preparing a private guest session.",primary:"",product:null});
+      store.set({view:"guest-initializing",title:"Starting COMPR…",copy:"Preparing the current product page.",primary:"",product:null});
       try {
         let session=await ComprAuth.getSession();
         if(!session&&ComprRuntimeConfig.guestMode===true){try{session=await ComprAuth.ensureGuestSession();}catch{session=null;}}
         if(disposed)return;
         if(!session){showSignIn();return;}
+        const extraction=withUiTimeout(()=>extractActiveProduct(),8000,"PRODUCT_TIMEOUT");
+        void extraction.catch(()=>{});
         const me=await confirmAccount();
         if(!me||disposed)return;
         account=me;
         void ComprCurrency.requestExchangeRates().then(rates=>{exchangeRates=rates;}).catch(()=>{});
-        await detectProduct(me);
+        await detectProduct(me,extraction);
       }
       catch(error) {
         if(disposed)return;
@@ -400,7 +412,7 @@
       }catch{ui.live.textContent=tr("We couldn't complete the App Store request.");}
       finally{setPlanButtonsDisabled(false);}
     }
-    ui.primary.addEventListener("click", async () => { const state=store.get(); if(state.view==="quota") openProSheet(); else if(["offline","account-error","startup-error"].includes(state.view)&&!product) await initialize(); else if (state.view==="ready"||["no-match","provider-error","timeout","offline","safety-limit"].includes(state.view)) await search(); else if (["match","saved"].includes(state.view)&&match) { const retailer=ComprSafariExperience.validatedRetailer(match); if(retailer&&ComprSafariExperience.isPublicDealUrl(match.offer.url,retailer)) await ComprBrowser.tabs.openExternal(match.offer.url); } });
+    ui.primary.addEventListener("click", async () => { const state=store.get(); if(state.view==="quota") openProSheet(); else if(["offline","account-error","startup-error","product-error"].includes(state.view)&&!product) await initialize(); else if (state.view==="ready"||["no-match","provider-error","timeout","offline","safety-limit"].includes(state.view)) await search(); else if (["match","saved"].includes(state.view)&&match) { const retailer=ComprSafariExperience.validatedRetailer(match); if(retailer&&ComprSafariExperience.isPublicDealUrl(match.offer.url,retailer)) await ComprBrowser.tabs.openExternal(match.offer.url); } });
     ui.planAction.addEventListener("click",async()=>{if(["pro","ultimate"].includes(entitlement.plan))await ComprBrowser.tabs.openExternal("https://apps.apple.com/account/subscriptions");else openProSheet();});
     ui.save.addEventListener("click", async()=>{
       if(!product)return;

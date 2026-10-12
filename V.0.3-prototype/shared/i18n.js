@@ -3,6 +3,10 @@
     {code:"en",label:"EN"},{code:"nl",label:"NL"},{code:"de",label:"DE"},{code:"fr",label:"FR"}
   ];
   const copy={
+    "Starting COMPR…":{nl:"COMPR starten…",de:"COMPR wird gestartet…",fr:"Démarrage de COMPR…"},
+    "Preparing the current product page.":{nl:"Productpagina voorbereiden…",de:"Produktseite wird vorbereitet…",fr:"Préparation de la page produit…"},
+    "The product page took too long to load.":{nl:"De productpagina reageert te langzaam.",de:"Die Produktseite reagiert zu langsam.",fr:"La page produit met trop de temps à répondre."},
+    "Reload the product page and try again.":{nl:"Laad de productpagina opnieuw en probeer het nogmaals.",de:"Lade die Produktseite neu und versuche es erneut.",fr:"Rechargez la page produit et réessayez."},
     "Search paused":{nl:"Even wachten met zoeken",de:"Suche pausiert",fr:"Recherche en pause"},
     "Your successful checks have not been used.":{nl:"Je beschikbare controles zijn niet gebruikt.",de:"Deine erfolgreichen Preischecks wurden nicht verbraucht.",fr:"Vos vérifications disponibles n’ont pas été utilisées."},
     "Try again in":{nl:"Probeer het opnieuw over",de:"Erneut versuchen in",fr:"Réessayez dans"},
