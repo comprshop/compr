@@ -89,7 +89,7 @@
       return ComprCurrency.format(converted===null?numeric:converted,converted===null?source:displayCurrency,countryCode);
     }
     [[ui.privacyLink,"Privacy"],[ui.matchLabel,"Verified cheaper match"],[ui.currentTotalLabel,"Current total"],[ui.dealTotalLabel,"Deal total"],[ui.trackLabel,"COMPR"],[ui.proTitle,"Choose your COMPR plan"],[ui.proCopy,"Find better prices. Choose how often you want to search."],[ui.planLegend,"Choose a billing period"],[ui.monthlyLabel,"Monthly"],[ui.yearlyLabel,"Yearly"],[ui.freeCurrent,"Current plan"],[ui.freeFeatureOne,"5 successful checks in your first month"],[ui.freeFeatureTwo,"3 successful checks per month after that"],[ui.popularLabel,"Popular"],[ui.proFeatureOne,"15 successful price checks per month"],[ui.proFeatureTwo,"For regular COMPR users"],[ui.ultimateFeatureOne,"50 successful price checks per month"],[ui.ultimateFeatureTwo,"For frequent price checking"],[ui.chooseFree,"Continue Free"],[ui.tryPro,"Choose Pro"],[ui.tryUltimate,"Choose Ultimate"],[ui.restore,"Restore Purchases"],[ui.notNow,"Not now"],[ui.renewalCopy,"Subscriptions renew automatically unless cancelled in your Apple Account."],[ui.save,"Save & Compare"],[ui.couponsToggle,"Coupons"],[ui.detailsToggle,"Details"],[ui.guidanceOne,"Open one specific product page"],[ui.guidanceTwo,"Wait until its price and options are visible"],[ui.guidanceThree,"Open COMPR again"],[ui.welcomeTitle,"One account. Clear choices."],[ui.welcomeFeatureOne,"Sign in securely with Apple"],[ui.welcomeFeatureTwo,"Choose monthly or yearly COMPR Pro"],[ui.welcomeFeatureThree,"Change or cancel later through Apple"]].forEach(([node,label])=>{if(node)node.textContent=tr(label);});
-    let product = null, productContext = null, observedTab = null, account = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false, initialized = false, refreshPromise = null;
+    let product = null, productContext = null, observedTab = null, account = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false, initialized = false, activationRefreshNeeded = false, refreshPromise = null;
     const store = ComprSafariExperience.createStore(render);
     let cooldownTimer=null,safetyUntil=0;
     ui.image.addEventListener("error",()=>{ui.image.hidden=true;ui.image.parentElement.classList.add("missing-image");});
@@ -277,7 +277,8 @@
 
     async function refreshAfterPopupActivation() {
       if(disposed||!initialized||refreshPromise)return refreshPromise;
-      if(store.get().view==="sign-in"){
+      const state=store.get();
+      if(!product&&["sign-in","guest-initializing","offline","startup-error","account-error"].includes(state.view)){
         refreshPromise=initialize().finally(()=>{refreshPromise=null;});
         return refreshPromise;
       }
@@ -450,6 +451,7 @@
     document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refreshAfterPopupActivation();});
     window.addEventListener("pageshow",()=>{
       disposed=false;
+      if(!initialized){activationRefreshNeeded=true;return;}
       void refreshAfterPopupActivation();
     });
     window.addEventListener("pagehide",()=>{
@@ -459,6 +461,10 @@
     });
     await initialize();
     initialized=true;
+    if(activationRefreshNeeded){
+      activationRefreshNeeded=false;
+      await refreshAfterPopupActivation();
+    }
     if(new URL(window.location.href).searchParams.get("plans")==="1")openProSheet();
     return true;
   }

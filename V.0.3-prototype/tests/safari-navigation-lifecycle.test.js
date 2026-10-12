@@ -45,7 +45,7 @@ test('popup activation re-extracts only after a tab or URL change',()=>{
 });
 
 test('popup activation replaces a stale sign-in view after native Apple login',()=>{
- assert.match(source,/store\.get\(\)\.view==="sign-in"/);
+ assert.match(source,/\["sign-in","guest-initializing","offline","startup-error","account-error"\]\.includes\(state\.view\)/);
  assert.match(source,/refreshPromise=initialize\(\)\.finally/);
  assert.match(source,/if\(!session\)\{showSignIn\(\);return;\}/);
  assert.match(source,/const me=await confirmAccount\(\)/);
@@ -54,11 +54,21 @@ test('popup activation replaces a stale sign-in view after native Apple login',(
 test('returning from native Apple login revives the same popup before refreshing',()=>{
  const pageShow=source.slice(source.indexOf('window.addEventListener("pageshow"'),source.indexOf('window.addEventListener("pagehide"'));
  assert.match(pageShow,/disposed=false/);
+ assert.match(pageShow,/if\(!initialized\)\{activationRefreshNeeded=true;return;\}/);
  assert.match(pageShow,/refreshAfterPopupActivation\(\)/);
  const pageHide=source.slice(source.indexOf('window.addEventListener("pagehide"'),source.lastIndexOf('initialized=true'));
  assert.match(pageHide,/disposed=true/);
  assert.match(pageHide,/actionGeneration\+=1/);
  assert.doesNotMatch(pageHide,/\{once:true\}/);
+});
+
+test('first-open pageshow is replayed once after interrupted initialization settles',()=>{
+ const initialization=source.slice(source.lastIndexOf('await initialize()'),source.indexOf('if(new URL'));
+ assert.match(initialization,/initialized=true/);
+ assert.match(initialization,/if\(activationRefreshNeeded\)/);
+ assert.match(initialization,/activationRefreshNeeded=false/);
+ assert.match(initialization,/await refreshAfterPopupActivation\(\)/);
+ assert.match(source,/\["sign-in","guest-initializing","offline","startup-error","account-error"\]\.includes\(state\.view\)/);
 });
 
 test('pre-send fail-closed context binding remains active',()=>{
