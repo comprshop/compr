@@ -15,7 +15,7 @@
     started = true;
     document.documentElement.classList.remove("chrome-popup");
     document.documentElement.classList.add("safari-popup");
-    const ui = Object.fromEntries(["Experience","Panel","Live","Loader","Eyebrow","Title","Copy","Guidance","GuidanceOne","GuidanceTwo","GuidanceThree","Welcome","WelcomeTitle","WelcomeFeatureOne","WelcomeFeatureTwo","WelcomeFeatureThree","Product","Image","ProductName","Store","CurrentPrice","Savings","Saving","OldTotal","DealTotal","CurrentRetailer","DealRetailer","Shipping","Trust","SignIn","Primary","Privacy","UsageNote","Actions","Save","CouponsToggle","DetailsToggle","Coupons","Details","PlanAction","ProSheet","ProTitle","ChooseFree","TryPro","TryUltimate","Restore","NotNow","PlanMonthly","PlanYearly","PrivacyBadge","PrivacyLink","MatchLabel","CurrentTotalLabel","DealTotalLabel","TrackLabel","ProCopy","PlanLegend","MonthlyLabel","YearlyLabel","FreeCurrent","FreeFeatureOne","FreeFeatureTwo","PopularLabel","ProPrice","ProFeatureOne","ProFeatureTwo","UltimatePrice","UltimateFeatureOne","UltimateFeatureTwo","ProductStatus","RenewalCopy"]
+    const ui = Object.fromEntries(["Experience","Panel","Live","Loader","Eyebrow","Title","Copy","Guidance","GuidanceOne","GuidanceTwo","GuidanceThree","Welcome","WelcomeTitle","WelcomeFeatureOne","WelcomeFeatureTwo","WelcomeFeatureThree","Product","Image","ProductName","Store","Variant","CurrentPrice","Savings","Saving","OldTotal","DealTotal","CurrentRetailer","DealRetailer","Shipping","Trust","SignIn","Primary","Privacy","UsageNote","Actions","Save","CouponsToggle","DetailsToggle","Coupons","Details","PlanAction","ProSheet","ProTitle","ChooseFree","TryPro","TryUltimate","Restore","NotNow","PlanMonthly","PlanYearly","PrivacyBadge","PrivacyLink","MatchLabel","CurrentTotalLabel","DealTotalLabel","TrackLabel","ProCopy","PlanLegend","MonthlyLabel","YearlyLabel","FreeCurrent","FreeFeatureOne","FreeFeatureTwo","PopularLabel","ProPrice","ProFeatureOne","ProFeatureTwo","UltimatePrice","UltimateFeatureOne","UltimateFeatureTwo","ProductStatus","RenewalCopy"]
       .map(name => [name[0].toLowerCase() + name.slice(1), document.getElementById(`safari${name}`)]));
     document.querySelectorAll(".app > :not(#safariExperience):not(#toast):not(#comparePrompt)").forEach(node => node.classList.add("safari-hidden"));
     document.querySelector(".app").classList.add("safari-mode");
@@ -96,6 +96,11 @@
 
     function text(node, value) { node.textContent = tr(value) || ""; }
     function show(node, visible) { node.classList.toggle("hidden", !visible); }
+    function selectedSizeLabel(value) {
+      const size=String(value?.selectedSize || "").trim().toUpperCase().replace(/^(EU|UK|US)\s*/, "$1 ");
+      if(!/^(?:(?:EU|UK|US) )?\d{1,2}(?:[.,]5)?$/.test(size))return "";
+      return `${isDutch ? "Maat" : "Size"} ${size}`;
+    }
     function showSignIn() {
       product=null;productContext=null;match=null;
       store.set({view:"sign-in",title:"Sign in to compare prices",copy:"COMPR uses your account to track price checks and recognise your plan and limit.",usageNote:"You only need to sign in once.",primary:"Sign in with Apple",product:null});
@@ -160,10 +165,12 @@
       show(ui.usageNote,Boolean(state.usageNote)); text(ui.usageNote,state.usageNote);
       if (state.product) {
         text(ui.productName, state.product.name); text(ui.store, state.product.webshop);
+        const variantLabel=selectedSizeLabel(state.product);
+        text(ui.variant,variantLabel);show(ui.variant,Boolean(variantLabel));
         text(ui.currentPrice, localMoney(state.product.totalPrice ?? state.product.price, state.product.currency));
         if (ComprProduct.getSafeWebUrl(state.product.image)) { ui.image.src = state.product.image; ui.image.hidden = false; ui.image.parentElement.classList.remove("missing-image"); }
         else { ui.image.removeAttribute("src"); ui.image.hidden = true; ui.image.parentElement.classList.add("missing-image"); }
-      }
+      } else { text(ui.variant,"");show(ui.variant,false); }
       if (state.match) {
         ui.detailsToggle.textContent=tr("Details");
         const totals = state.match.totals, offer = state.match.offer;

@@ -1153,6 +1153,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .safari-image-frame.missing-image::before { content:"Image unavailable"; padding:8px; color:var(--compr-muted); font-size:9px; text-align:center; }
 .safari-product h2 { display:-webkit-box; margin:2px 0 6px; overflow:hidden; overflow-wrap:anywhere; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:14px; line-height:1.28; }
 .safari-product p { margin:0 0 9px; overflow:hidden; color:var(--compr-muted); font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+.safari-product .safari-variant { display:inline-block; margin:-2px 0 8px; padding:3px 7px; border:1px solid var(--compr-border); border-radius:999px; color:var(--compr-text-2); font-size:10px; font-weight:750; line-height:1.2; }
 .safari-product strong { font-size:17px; }
 .safari-primary { width:100%; min-height:50px; margin-top:14px; border:0; border-radius:14px; background:var(--compr-purple); color:#fff; font:inherit; font-weight:800; cursor:pointer; transition:opacity 140ms ease,transform 140ms ease,background 140ms ease; }
 .safari-primary:hover { background:var(--compr-purple-hover); }.safari-primary:active { transform:scale(.985); }.safari-primary:focus-visible { outline:0; box-shadow:var(--compr-focus); }
@@ -1372,6 +1373,7 @@ html.safari-popup .safari-product {
 html.safari-popup .safari-image-frame { width:76px; height:84px; border-radius:10px; }
 html.safari-popup .safari-product h2 { margin:1px 0 5px; font-size:15px; line-height:1.25; }
 html.safari-popup .safari-product p { margin-bottom:8px; font-size:12px; }
+html.safari-popup .safari-product .safari-variant { margin:-1px 0 8px; font-size:11px; }
 html.safari-popup .safari-product strong { font-size:20px; letter-spacing:-.35px; }
 html.safari-popup .safari-primary {
   min-height:52px;
