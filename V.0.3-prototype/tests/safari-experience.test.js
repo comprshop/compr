@@ -18,7 +18,9 @@ test("Safari formats extracted locale price strings through the shared currency 
 });
 test("Safari product card includes the selected-size element",()=>{
   assert.match(html,/id="safariVariant" class="safari-variant hidden"/);
+  assert.match(html,/id="safariSizeWarning" class="safari-size-warning hidden"/);
   assert.match(popup,/renderSelectedSize\(ui\.variant,state\.product,isDutch\)/);
+  assert.match(popup,/renderSizeWarning\(ui\.sizeWarning,state\.product,isDutch\)/);
 });
 test("identical no-match updates do not rerender",()=>{let n=0;const s=UX.createStore(()=>n++);for(let i=0;i<100;i++)s.set({view:"no-match",title:"No reliable match"});assert.equal(n,1);});
 test("verified deal must have comparable totals, known shipping and the right retailer",()=>{

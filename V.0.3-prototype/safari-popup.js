@@ -38,13 +38,26 @@
     return node.textContent;
   }
   const renderSelectedSize=renderSelectedVariants;
+  function requiresSelectedSize(value) {
+    if(!value||typeof value!=="object")return false;
+    if(value.sizeRequired===true)return true;
+    return /^(?:shoes?|sneakers?|footwear|clothing|apparel|kleding|schoenen|shirts?|tops?|pants?|trousers?|dresses?|skirts?)$/i.test(String(value.category||"").trim());
+  }
+  function renderSizeWarning(node,value,isDutch) {
+    const visible=requiresSelectedSize(value)&&!reliableSelectedSize(value);
+    node.textContent=visible ? isDutch
+      ? "Let op: de maat wordt niet altijd meegenomen. Controleer bij de winkel of de prijs voor jouw maat geldt."
+      : "Note: size is not always included. Check with the retailer whether the price applies to your size." : "";
+    node.classList.toggle("hidden",!visible);
+    return node.textContent;
+  }
 
   async function start() {
     if (started) return false;
     started = true;
     document.documentElement.classList.remove("chrome-popup");
     document.documentElement.classList.add("safari-popup");
-    const ui = Object.fromEntries(["Experience","Panel","Live","Loader","Eyebrow","Title","Copy","Guidance","GuidanceOne","GuidanceTwo","GuidanceThree","Welcome","WelcomeTitle","WelcomeFeatureOne","WelcomeFeatureTwo","WelcomeFeatureThree","Product","Image","ProductName","Store","Variant","CurrentPrice","Savings","Saving","OldTotal","DealTotal","CurrentRetailer","DealRetailer","Shipping","Trust","SignIn","Primary","Privacy","UsageNote","Actions","Save","CouponsToggle","DetailsToggle","Coupons","Details","PlanAction","ProSheet","ProTitle","ChooseFree","TryPro","TryUltimate","Restore","NotNow","PlanMonthly","PlanYearly","PrivacyBadge","PrivacyLink","MatchLabel","CurrentTotalLabel","DealTotalLabel","TrackLabel","ProCopy","PlanLegend","MonthlyLabel","YearlyLabel","FreeCurrent","FreeFeatureOne","FreeFeatureTwo","PopularLabel","ProPrice","ProFeatureOne","ProFeatureTwo","UltimatePrice","UltimateFeatureOne","UltimateFeatureTwo","ProductStatus","RenewalCopy"]
+    const ui = Object.fromEntries(["Experience","Panel","Live","Loader","Eyebrow","Title","Copy","Guidance","GuidanceOne","GuidanceTwo","GuidanceThree","Welcome","WelcomeTitle","WelcomeFeatureOne","WelcomeFeatureTwo","WelcomeFeatureThree","Product","Image","ProductName","Store","Variant","SizeWarning","CurrentPrice","Savings","Saving","OldTotal","DealTotal","CurrentRetailer","DealRetailer","Shipping","Trust","SignIn","Primary","Privacy","UsageNote","Actions","Save","CouponsToggle","DetailsToggle","Coupons","Details","PlanAction","ProSheet","ProTitle","ChooseFree","TryPro","TryUltimate","Restore","NotNow","PlanMonthly","PlanYearly","PrivacyBadge","PrivacyLink","MatchLabel","CurrentTotalLabel","DealTotalLabel","TrackLabel","ProCopy","PlanLegend","MonthlyLabel","YearlyLabel","FreeCurrent","FreeFeatureOne","FreeFeatureTwo","PopularLabel","ProPrice","ProFeatureOne","ProFeatureTwo","UltimatePrice","UltimateFeatureOne","UltimateFeatureTwo","ProductStatus","RenewalCopy"]
       .map(name => [name[0].toLowerCase() + name.slice(1), document.getElementById(`safari${name}`)]));
     document.querySelectorAll(".app > :not(#safariExperience):not(#toast):not(#comparePrompt)").forEach(node => node.classList.add("safari-hidden"));
     document.querySelector(".app").classList.add("safari-mode");
@@ -190,10 +203,11 @@
       if (state.product) {
         text(ui.productName, state.product.name); text(ui.store, state.product.webshop);
         renderSelectedSize(ui.variant,state.product,isDutch);
+        renderSizeWarning(ui.sizeWarning,state.product,isDutch);
         text(ui.currentPrice, localMoney(state.product.totalPrice ?? state.product.price, state.product.currency));
         if (ComprProduct.getSafeWebUrl(state.product.image)) { ui.image.src = state.product.image; ui.image.hidden = false; ui.image.parentElement.classList.remove("missing-image"); }
         else { ui.image.removeAttribute("src"); ui.image.hidden = true; ui.image.parentElement.classList.add("missing-image"); }
-      } else { text(ui.variant,"");show(ui.variant,false); }
+      } else { text(ui.variant,"");show(ui.variant,false);text(ui.sizeWarning,"");show(ui.sizeWarning,false); }
       if (state.match) {
         ui.detailsToggle.textContent=tr("Details");
         const totals = state.match.totals, offer = state.match.offer;
@@ -502,5 +516,5 @@
     if(new URL(window.location.href).searchParams.get("plans")==="1")openProSheet();
     return true;
   }
-  root.ComprSafariPopup={start,tabLocation,sameTabLocation,reliableSelectedVariants,reliableSelectedSize,renderSelectedVariants,renderSelectedSize};
+  root.ComprSafariPopup={start,tabLocation,sameTabLocation,reliableSelectedVariants,reliableSelectedSize,renderSelectedVariants,renderSelectedSize,requiresSelectedSize,renderSizeWarning};
 })(typeof globalThis!=="undefined"?globalThis:this);

@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const source=fs.readFileSync(path.join(__dirname,'../safari-popup.js'),'utf8');
 const Product=require('../shared/product');
 const context={ComprProduct:Product};vm.createContext(context);vm.runInContext(source,context);
-const {tabLocation,sameTabLocation,reliableSelectedSize,renderSelectedSize}=context.ComprSafariPopup;
+const {tabLocation,sameTabLocation,reliableSelectedSize,renderSelectedSize,renderSizeWarning}=context.ComprSafariPopup;
 const nike='https://www.nike.com/nl/t/air-max-90-CN8490-100';
 const sony='https://www.smythstoys.com/de/de-de/sony-wh-ch520-schwarz/p/sony';
 
@@ -13,6 +13,12 @@ function renderedSize(product,isDutch=true){
  const text=renderSelectedSize(node,product,isDutch);
  return {text,hidden:classes.has('hidden')};
 }
+function renderedWarning(product,isDutch=true){
+ const classes=new Set(['hidden']);
+ const node={textContent:'',classList:{toggle:(name,hidden)=>hidden?classes.add(name):classes.delete(name)}};
+ const text=renderSizeWarning(node,product,isDutch);
+ return {text,hidden:classes.has('hidden')};
+}
 
 test('rendered Nike product card visibly shows EU 42 from extracted or normalized state',()=>{
  assert.deepEqual(renderedSize({selectedVariants:{size:{value:'EU 42',evidence:'dom_selected_control'}}}),{text:'Maat EU 42',hidden:false});
@@ -20,6 +26,24 @@ test('rendered Nike product card visibly shows EU 42 from extracted or normalize
  assert.deepEqual(renderedSize({size:'EU 42',sizeRequired:true}),{text:'Maat EU 42',hidden:false});
  assert.equal(reliableSelectedSize({size:'EU 42'}),'','an unproven generic size is never displayed');
  assert.deepEqual(renderedSize({selectedSize:null,size:'EU 42',sizeRequired:true}),{text:'',hidden:true},'an explicit missing extraction never falls back');
+});
+
+test('shoe without proven size shows a subtle warning',()=>{
+ const result=renderedWarning({category:'Shoes',sizeRequired:true,selectedVariants:{}});
+ assert.equal(result.hidden,false);assert.equal(result.text,'Let op: de maat wordt niet altijd meegenomen. Controleer bij de winkel of de prijs voor jouw maat geldt.');
+});
+
+test('clothing without proven size shows the same warning',()=>{
+ assert.equal(renderedWarning({category:'Clothing',sizeRequired:true}).hidden,false);
+});
+
+test('proven apparel size shows size and suppresses warning',()=>{
+ const product={category:'Shoes',sizeRequired:true,selectedVariants:{size:{value:'EU 42',evidence:'dom_selected_control'}}};
+ assert.equal(renderedSize(product).text,'Maat EU 42');assert.equal(renderedWarning(product).hidden,true);
+});
+
+test('electronics without size never shows an apparel warning',()=>{
+ assert.deepEqual(renderedWarning({category:'Electronics',name:'Sony WH-CH520'}),{text:'',hidden:true});
 });
 
 test('Nike is stable in its original tab context',()=>{
