@@ -26,6 +26,9 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
 
     override func viewDidLoad() {
         super.viewDidLoad()
+#if DEBUG && os(iOS)
+        exposeSandboxProductDiagnostics()
+#endif
         NotificationCenter.default.addObserver(self, selector: #selector(handleAppleSignInRequest), name: comprAppleSignInRequested, object: nil)
         webView.navigationDelegate = self
         webView.configuration.userContentController.add(self, name: "controller")
@@ -37,6 +40,30 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         installNativeAppleSignInButton()
 #endif
     }
+
+#if DEBUG && os(iOS)
+    private func exposeSandboxProductDiagnostics() {
+        guard ComprNativeAuthConfig.projectRef == "uhvukecryuvosuascics",
+              let container = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: "group.nl.getcompr.compr"
+              ) else { return }
+
+        let source = container.appendingPathComponent("compr-product-diagnostics.json")
+        guard FileManager.default.fileExists(atPath: source.path) else { return }
+
+        let documents = container.appendingPathComponent("Documents", isDirectory: true)
+        let readableCopy = documents.appendingPathComponent("compr-product-diagnostics.json")
+        do {
+            try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
+            if FileManager.default.fileExists(atPath: readableCopy.path) {
+                try FileManager.default.removeItem(at: readableCopy)
+            }
+            try FileManager.default.copyItem(at: source, to: readableCopy)
+        } catch {
+            // Diagnostics must never affect normal app or extension startup.
+        }
+    }
+#endif
 
 #if os(iOS)
     private func installNativeAppleSignInButton() {

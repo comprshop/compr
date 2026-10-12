@@ -155,23 +155,44 @@
       price: rawPrice && /^\d+(?:\.\d+)?$/.test(String(rawPrice).trim()) ? Number(rawPrice) : NaN,
       condition: conditionElement?.getAttribute?.("href") || conditionElement?.getAttribute?.("content") || ""
     };
+    const addDocument = parsed => {
+      const roots = Array.isArray(parsed) ? parsed : [parsed];
+      const graphNodes = roots.flatMap(item => Array.isArray(item?.["@graph"]) ? item["@graph"] : []);
+      const byId = new Map(graphNodes.filter(item => item?.["@id"]).map(item => [item["@id"], item]));
+      const resolve = (value, seen = new Set()) => {
+        if (Array.isArray(value)) return value.map(item => resolve(item, new Set(seen)));
+        if (!value || typeof value !== "object") return value;
+        const id = value["@id"];
+        if (id && byId.has(id) && !seen.has(id)) {
+          const next = new Set(seen); next.add(id);
+          return resolve({ ...byId.get(id), ...value }, next);
+        }
+        const copy = { ...value };
+        for (const key of ["offers", "hasVariant", "mainEntity", "object", "brand", "image"])
+          if (key in copy) copy[key] = resolve(copy[key], new Set(seen));
+        return copy;
+      };
+      const add = item => {
+        const resolved = resolve(item);
+        if (isProductType(resolved?.["@type"])) candidates.push(resolved);
+        const grouped = productFromVariantGroup(resolved, pageUrl, evidence);
+        if (grouped) candidates.push(grouped);
+        for (const nested of [resolved?.object, resolved?.mainEntity]) {
+          if (isProductType(nested?.["@type"])) candidates.push(nested);
+          const nestedGroup = productFromVariantGroup(nested, pageUrl, evidence);
+          if (nestedGroup) candidates.push(nestedGroup);
+        }
+      };
+      roots.forEach(add);
+      if (graphNodes.length) {
+        const resolvedGroups = graphNodes.map(item => resolve(item)).map(group => productFromVariantGroup(group, pageUrl, evidence)).filter(Boolean);
+        if (resolvedGroups.length) candidates.push(...resolvedGroups);
+        else graphNodes.filter(item => isProductType(item?.["@type"])).forEach(add);
+      }
+    };
     for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
       try {
-        const parsed = JSON.parse(script.textContent || "null");
-        for (const item of Array.isArray(parsed) ? parsed : [parsed]) {
-          if (isProductType(item?.["@type"])) candidates.push(item);
-          const groupedProduct = productFromVariantGroup(item, pageUrl, evidence);
-          if (groupedProduct) candidates.push(groupedProduct);
-          const actionObject = item?.object;
-          if (isProductType(actionObject?.["@type"])) candidates.push(actionObject);
-          const groupedActionObject = productFromVariantGroup(actionObject, pageUrl, evidence);
-          if (groupedActionObject) candidates.push(groupedActionObject);
-          const main = item?.mainEntity;
-          if (isProductType(main?.["@type"])) candidates.push(main);
-          if (Array.isArray(item?.["@graph"])) {
-            for (const graphItem of item["@graph"]) if (isProductType(graphItem?.["@type"])) candidates.push(graphItem);
-          }
-        }
+        addDocument(JSON.parse(script.textContent || "null"));
       } catch { /* Invalid structured data is not product evidence. */ }
     }
     const unique = [...new Set(candidates)];
@@ -212,7 +233,7 @@
     const detectedPrice = helpers.getPrice ? helpers.getPrice(jsonProduct) : null;
     const hasPrice = detectedPrice && detectedPrice !== "Prijs niet gevonden";
     const ids = helpers.getProductId ? helpers.getProductId(jsonProduct) : null;
-    const hasId = Boolean(ids && [ids.gtin, ids.mpn, ids.sku, ids.retailerSku, ids.productCode].some(validIdentifier));
+    const hasId = Boolean(ids && [ids.gtin, ids.mpn, ids.sku, ids.retailerSku, ids.productCode, ids.unknownCode].some(validIdentifier));
     const productMeta = hasProductMeta(doc);
     const purchaseControl = hasPurchaseControl(doc);
     const unresolvedGroup = !jsonProduct && [...doc.querySelectorAll('script[type="application/ld+json"]')].some(script => {

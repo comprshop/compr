@@ -181,6 +181,12 @@ async function getProductInfo() {
     identifierType:
       identifiers?.identifierType || null,
 
+    identifiers:
+      identifiers?.identifiers || [],
+
+    retailerProductId:
+      identifiers?.unknownCode || null,
+
     url: canonicalUrl,
 
     canonicalUrl,

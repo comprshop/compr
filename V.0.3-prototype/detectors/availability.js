@@ -4,9 +4,9 @@ function normalizeAvailabilityValue(value) {
 
 function availabilityFromValue(value) {
   const normalized = normalizeAvailabilityValue(value);
-  if (/(?:instock|limitedavailability|onlineonly)/.test(normalized)) return "in_stock";
+  if (/(?:instock|limitedavailability|onlineonly|auflager|enstock|disponible|disponibile)/.test(normalized)) return "in_stock";
   if (/(?:preorder|presale)/.test(normalized)) return "preorder";
-  if (/(?:outofstock|soldout|discontinued)/.test(normalized)) return "out_of_stock";
+  if (/(?:outofstock|soldout|discontinued|nichtverf[uü]gbar|ausverkauft|rupturedestock|agotado|esaurito)/.test(normalized)) return "out_of_stock";
   return "unknown";
 }
 

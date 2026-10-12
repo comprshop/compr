@@ -52,3 +52,10 @@ test('mixed Debug endpoints fail closed before auth or request',()=>{
 test('logged-out Debug search never starts backend request',async()=>{
  const c=context();await assert.rejects(c.api.search({name:'test'}),e=>e.code==='AUTH_REQUIRED');
 });
+test('Debug container exposes only sandbox product diagnostics through readable App Group Documents',()=>{
+ const swift=fs.readFileSync(path.join(__dirname,'../../safari-mac-day-kit/container-app/ViewController.swift'),'utf8');
+ assert.match(swift,/#if DEBUG && os\(iOS\)[\s\S]*exposeSandboxProductDiagnostics\(\)/);
+ assert.match(swift,/ComprNativeAuthConfig\.projectRef == "uhvukecryuvosuascics"/);
+ assert.match(swift,/appendingPathComponent\("Documents", isDirectory: true\)/);
+ assert.match(swift,/copyItem\(at: source, to: readableCopy\)/);
+});
