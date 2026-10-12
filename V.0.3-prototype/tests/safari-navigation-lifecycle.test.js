@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const source=fs.readFileSync(path.join(__dirname,'../safari-popup.js'),'utf8');
 const Product=require('../shared/product');
 const context={ComprProduct:Product};vm.createContext(context);vm.runInContext(source,context);
-const {tabLocation,sameTabLocation,reliableSelectedSize,renderSelectedSize,renderSizeWarning}=context.ComprSafariPopup;
+const {tabLocation,sameTabLocation,needsProductRefresh,reliableSelectedSize,renderSelectedSize,renderSizeWarning}=context.ComprSafariPopup;
 const nike='https://www.nike.com/nl/t/air-max-90-CN8490-100';
 const sony='https://www.smythstoys.com/de/de-de/sony-wh-ch520-schwarz/p/sony';
 
@@ -37,9 +37,9 @@ test('clothing without proven size shows the same warning',()=>{
  assert.equal(renderedWarning({category:'Clothing',sizeRequired:true}).hidden,false);
 });
 
-test('proven apparel size shows size and suppresses warning',()=>{
+test('proven apparel size shows both the size and the safety warning',()=>{
  const product={category:'Shoes',sizeRequired:true,selectedVariants:{size:{value:'EU 42',evidence:'dom_selected_control'}}};
- assert.equal(renderedSize(product).text,'Maat EU 42');assert.equal(renderedWarning(product).hidden,true);
+ assert.equal(renderedSize(product).text,'Maat EU 42');assert.equal(renderedWarning(product).hidden,false);
 });
 
 test('electronics without size never shows an apparel warning',()=>{
@@ -54,6 +54,12 @@ test('Nike is stable in its original tab context',()=>{
 test('same-tab navigation from Nike to Sony invalidates the observed location',()=>{
  const observed=tabLocation({id:7,url:nike});
  assert.equal(sameTabLocation(observed,{id:7,url:sony}),false);
+});
+
+test('a transient empty Sony extraction never marks the Sony tab as fully refreshed',()=>{
+ const observed=tabLocation({id:7,url:sony});
+ assert.equal(needsProductRefresh(observed,{id:7,url:sony},null),true);
+ assert.equal(needsProductRefresh(observed,{id:7,url:sony},{name:'Sony WH-CH520'}),false);
 });
 
 test('Sony binds to the same tab id and its new URL',()=>{
@@ -79,7 +85,7 @@ test('two tabs with the same URL remain isolated',()=>{
 test('popup activation re-extracts only after a tab or URL change',()=>{
  assert.match(source,/window\.addEventListener\("focus"[^\n]+refreshAfterPopupActivation/);
  assert.match(source,/visibilitychange[^\n]+refreshAfterPopupActivation/);
- assert.match(source,/sameTabLocation\(observedTab,tab\)/);
+ assert.match(source,/needsProductRefresh\(observedTab,tab,product\)/);
  assert.match(source,/product=null;productContext=null;match=null;lastResponse=null;/);
  assert.match(source,/await detectProduct\(me\)/);
 });

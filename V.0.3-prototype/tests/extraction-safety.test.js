@@ -54,3 +54,24 @@ test('mixed VAT prices report uncertainty; no unproven consumer-price reassignme
  assert.deepEqual(Price.getPriceProvenance(null),{source:'page_text',taxBasis:'unknown',vatContext:'mixed'});
  });
 });
+
+test('current Smyths Sony product evidence remains eligible and extracts the known product',async()=>{
+ const url='https://www.smythstoys.com/de/de-de/gaming/kinderelektronik/kopfhoerer/sony-kopfhoerer-wh-ch520-wireless-bluetooth-on-ear-schwarz/p/222613';
+ const structured={'@type':'Product',name:'Sony Kopfhörer WH-CH520 Wireless Bluetooth On-Ear schwarz',image:'https://image.smythstoys.com/original/800/desktop/222613.jpg',sku:'222613',offers:[{'@type':'Offer',price:'34.99',priceCurrency:'EUR',url}]};
+ const jsonNode=node(JSON.stringify(structured));
+ const meta={getAttribute:key=>key==='content'?'34.99':null,content:'34.99'};
+ const buy=node('In den Warenkorb');
+ const doc={title:`${structured.name} | Smyths Toys Deutschland`,readyState:'complete',baseURI:url,documentElement:{lang:'de-DE'},body:{innerText:`${structured.name} Ref: 222613 34,99 €`},
+  querySelector:selector=>selector==='h1'?node(structured.name):selector.includes('product:price')||selector.includes('og:price')?meta:null,
+  querySelectorAll:selector=>selector.includes('ld+json')?[jsonNode]:selector.startsWith('button')?[buy]:[]};
+ const eligible=Eligibility.assessPage(doc,url,{getPrice:()=> '34,99 €',getPriceCurrency:()=> 'EUR',getPriceProvenance:()=>({source:'jsonld_offer'}),getProductId:()=>({sku:'222613'}),getSelectedSize:()=>({status:'missing'})});
+ assert.equal(eligible.eligible,true);assert.equal(eligible.jsonProduct.name,structured.name);
+ const globals={console,URL,document:doc,window:{location:new URL(url)},
+  ComprProductEligibility:{assessPage:()=>({...eligible,isApparel:false})},ComprBrowser:{runtime:{onMessage:()=>{}}},
+  getPrice:()=> '34.99 EUR',getPriceCurrency:()=> 'EUR',getPriceProvenance:()=>({source:'jsonld_offer'}),getProductId:()=>({sku:'222613'}),
+  selectProductTitle:()=>({name:structured.name,rawTitle:structured.name}),getCategory:()=> 'TV & Audio',getAvailability:()=>({availableSizes:[],unavailableSizes:[],status:'out_of_stock'}),
+  getStorePolicies:()=>({}),findOfficialDiscountCodes:async()=>[],findCurrentDeals:()=>[],getBrand:()=> 'Sony',getColor:()=> 'black',getMaterial:()=>'',getSizes:()=>[]};
+ vm.createContext(globals);vm.runInContext(fs.readFileSync(path.join(__dirname,'../detectors/sizes.js'),'utf8'),globals);vm.runInContext(fs.readFileSync(path.join(__dirname,'../content.js'),'utf8'),globals);
+ const extracted=await globals.getProductInfo();
+ assert.equal(extracted.name,structured.name);assert.equal(extracted.price,'34.99 EUR');assert.equal(extracted.webshop,'www.smythstoys.com');assert.equal(extracted.image,structured.image);assert.equal(extracted.category,'TV & Audio');
+});

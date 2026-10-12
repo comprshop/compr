@@ -9,6 +9,9 @@
     const current=tabLocation(right);
     return Boolean(left&&current&&left.tabId===current.tabId&&left.tabUrl===current.tabUrl);
   }
+  function needsProductRefresh(observed,current,activeProduct) {
+    return !activeProduct || !sameTabLocation(observed,current);
+  }
   function reliableSelectedVariants(value) {
     if(!value||typeof value!=="object")return {};
     const variants=root.ComprProduct?.normalizeSelectedVariants?.(value) || {};
@@ -44,7 +47,7 @@
     return /^(?:shoes?|sneakers?|footwear|clothing|apparel|kleding|schoenen|shirts?|tops?|pants?|trousers?|dresses?|skirts?)$/i.test(String(value.category||"").trim());
   }
   function renderSizeWarning(node,value,isDutch) {
-    const visible=requiresSelectedSize(value)&&!reliableSelectedSize(value);
+    const visible=requiresSelectedSize(value);
     node.textContent=visible ? isDutch
       ? "Let op: de maat wordt niet altijd meegenomen. Controleer bij de winkel of de prijs voor jouw maat geldt."
       : "Note: size is not always included. Check with the retailer whether the price applies to your size." : "";
@@ -306,7 +309,7 @@
       if(disposed||!initialized||store.get().view==="searching"||refreshPromise)return refreshPromise;
       refreshPromise=(async()=>{
         const [tab]=await ComprBrowser.tabs.query({active:true,currentWindow:true});
-        if(!tab?.id||sameTabLocation(observedTab,tab))return;
+        if(!tab?.id||!needsProductRefresh(observedTab,tab,product))return;
         actionGeneration+=1;
         observedTab=tabLocation(tab);
         product=null;productContext=null;match=null;lastResponse=null;
@@ -516,5 +519,5 @@
     if(new URL(window.location.href).searchParams.get("plans")==="1")openProSheet();
     return true;
   }
-  root.ComprSafariPopup={start,tabLocation,sameTabLocation,reliableSelectedVariants,reliableSelectedSize,renderSelectedVariants,renderSelectedSize,requiresSelectedSize,renderSizeWarning};
+  root.ComprSafariPopup={start,tabLocation,sameTabLocation,needsProductRefresh,reliableSelectedVariants,reliableSelectedSize,renderSelectedVariants,renderSelectedSize,requiresSelectedSize,renderSizeWarning};
 })(typeof globalThis!=="undefined"?globalThis:this);
