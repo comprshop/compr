@@ -37,11 +37,18 @@ test('two tabs with the same URL remain isolated',()=>{
 });
 
 test('popup activation re-extracts only after a tab or URL change',()=>{
- assert.match(source,/window\.addEventListener\("focus"[^\n]+refreshAfterTabNavigation/);
- assert.match(source,/visibilitychange[^\n]+refreshAfterTabNavigation/);
+ assert.match(source,/window\.addEventListener\("focus"[^\n]+refreshAfterPopupActivation/);
+ assert.match(source,/visibilitychange[^\n]+refreshAfterPopupActivation/);
  assert.match(source,/sameTabLocation\(observedTab,tab\)/);
  assert.match(source,/product=null;productContext=null;match=null;lastResponse=null;/);
  assert.match(source,/await detectProduct\(me\)/);
+});
+
+test('popup activation replaces a stale sign-in view after native Apple login',()=>{
+ assert.match(source,/store\.get\(\)\.view==="sign-in"/);
+ assert.match(source,/refreshPromise=initialize\(\)\.finally/);
+ assert.match(source,/if\(!session\)\{showSignIn\(\);return;\}/);
+ assert.match(source,/const me=await confirmAccount\(\)/);
 });
 
 test('pre-send fail-closed context binding remains active',()=>{
