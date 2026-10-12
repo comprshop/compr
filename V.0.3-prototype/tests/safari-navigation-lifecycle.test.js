@@ -51,6 +51,16 @@ test('popup activation replaces a stale sign-in view after native Apple login',(
  assert.match(source,/const me=await confirmAccount\(\)/);
 });
 
+test('returning from native Apple login revives the same popup before refreshing',()=>{
+ const pageShow=source.slice(source.indexOf('window.addEventListener("pageshow"'),source.indexOf('window.addEventListener("pagehide"'));
+ assert.match(pageShow,/disposed=false/);
+ assert.match(pageShow,/refreshAfterPopupActivation\(\)/);
+ const pageHide=source.slice(source.indexOf('window.addEventListener("pagehide"'),source.lastIndexOf('initialized=true'));
+ assert.match(pageHide,/disposed=true/);
+ assert.match(pageHide,/actionGeneration\+=1/);
+ assert.doesNotMatch(pageHide,/\{once:true\}/);
+});
+
 test('pre-send fail-closed context binding remains active',()=>{
  assert.match(source,/const detected=await extractActiveProduct\(\)/);
  assert.match(source,/!sameProductContext\(productContext,detected\.context\)/);

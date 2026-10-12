@@ -448,7 +448,15 @@
     ui.proSheet.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();closeProSheet();return;}if(event.key!=="Tab")return;const focusable=[ui.planMonthly,ui.planYearly,ui.chooseFree,ui.tryPro,ui.tryUltimate,ui.restore,ui.privacyLink,ui.notNow].filter(node=>!node.disabled);const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}});
     window.addEventListener("focus",()=>{void refreshAfterPopupActivation();});
     document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refreshAfterPopupActivation();});
-    window.addEventListener("pagehide",()=>{disposed=true;actionGeneration+=1;clearTimeout(cooldownTimer);},{once:true});
+    window.addEventListener("pageshow",()=>{
+      disposed=false;
+      void refreshAfterPopupActivation();
+    });
+    window.addEventListener("pagehide",()=>{
+      disposed=true;
+      actionGeneration+=1;
+      clearTimeout(cooldownTimer);
+    });
     await initialize();
     initialized=true;
     if(new URL(window.location.href).searchParams.get("plans")==="1")openProSheet();
