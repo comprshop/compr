@@ -2,9 +2,23 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'../safari-popup.js'),'utf8');
 const context={};vm.createContext(context);vm.runInContext(source,context);
-const {tabLocation,sameTabLocation}=context.ComprSafariPopup;
+const {tabLocation,sameTabLocation,reliableSelectedSize,renderSelectedSize}=context.ComprSafariPopup;
 const nike='https://www.nike.com/nl/t/air-max-90-CN8490-100';
 const sony='https://www.smythstoys.com/de/de-de/sony-wh-ch520-schwarz/p/sony';
+
+function renderedSize(product,isDutch=true){
+ const classes=new Set(['hidden']);
+ const node={textContent:'',classList:{toggle:(name,hidden)=>hidden?classes.add(name):classes.delete(name)}};
+ const text=renderSelectedSize(node,product,isDutch);
+ return {text,hidden:classes.has('hidden')};
+}
+
+test('rendered Nike product card visibly shows EU 42 from extracted or normalized state',()=>{
+ assert.deepEqual(renderedSize({selectedSize:'EU 42',sizeRequired:true}),{text:'Maat EU 42',hidden:false});
+ assert.deepEqual(renderedSize({size:'EU 42',sizeRequired:true}),{text:'Maat EU 42',hidden:false});
+ assert.equal(reliableSelectedSize({size:'EU 42'}),'','an unproven generic size is never displayed');
+ assert.deepEqual(renderedSize({selectedSize:null,size:'EU 42',sizeRequired:true}),{text:'',hidden:true},'an explicit missing extraction never falls back');
+});
 
 test('Nike is stable in its original tab context',()=>{
  const observed=tabLocation({id:7,url:nike});

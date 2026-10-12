@@ -16,12 +16,9 @@ test("100 identical ready and result updates each render once",()=>{
 test("Safari formats extracted locale price strings through the shared currency parser",()=>{
   assert.match(popup,/function localMoney\(amount, sourceCurrency\)[\s\S]*ComprCurrency\.parseAmount\(amount\)/);
 });
-test("Safari product card shows only an explicitly selected reliable size",()=>{
+test("Safari product card includes the selected-size element",()=>{
   assert.match(html,/id="safariVariant" class="safari-variant hidden"/);
-  assert.match(popup,/function selectedSizeLabel\(value\)[\s\S]*value\?\.selectedSize/);
-  assert.match(popup,/\^\(\?:\(\?:EU\|UK\|US\) \)\?\\d/);
-  assert.match(popup,/text\(ui\.variant,variantLabel\);show\(ui\.variant,Boolean\(variantLabel\)\)/);
-  assert.doesNotMatch(popup,/selectedSize \|\| value\?\.size/);
+  assert.match(popup,/renderSelectedSize\(ui\.variant,state\.product,isDutch\)/);
 });
 test("identical no-match updates do not rerender",()=>{let n=0;const s=UX.createStore(()=>n++);for(let i=0;i<100;i++)s.set({view:"no-match",title:"No reliable match"});assert.equal(n,1);});
 test("verified deal must have comparable totals, known shipping and the right retailer",()=>{

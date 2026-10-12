@@ -9,6 +9,19 @@
     const current=tabLocation(right);
     return Boolean(left&&current&&left.tabId===current.tabId&&left.tabUrl===current.tabUrl);
   }
+  function reliableSelectedSize(value) {
+    if(!value||typeof value!=="object")return "";
+    const hasExtracted=Object.prototype.hasOwnProperty.call(value,"selectedSize");
+    const raw=hasExtracted ? value.selectedSize : value.sizeRequired===true ? value.size : "";
+    const size=String(raw||"").trim().toUpperCase().replace(/^(EU|UK|US)\s*/,"$1 ");
+    return /^(?:(?:EU|UK|US) )?\d{1,2}(?:[.,]5)?$/.test(size) ? size : "";
+  }
+  function renderSelectedSize(node,value,isDutch) {
+    const size=reliableSelectedSize(value);
+    node.textContent=size ? `${isDutch ? "Maat" : "Size"} ${size}` : "";
+    node.classList.toggle("hidden",!size);
+    return node.textContent;
+  }
 
   async function start() {
     if (started) return false;
@@ -96,11 +109,6 @@
 
     function text(node, value) { node.textContent = tr(value) || ""; }
     function show(node, visible) { node.classList.toggle("hidden", !visible); }
-    function selectedSizeLabel(value) {
-      const size=String(value?.selectedSize || "").trim().toUpperCase().replace(/^(EU|UK|US)\s*/, "$1 ");
-      if(!/^(?:(?:EU|UK|US) )?\d{1,2}(?:[.,]5)?$/.test(size))return "";
-      return `${isDutch ? "Maat" : "Size"} ${size}`;
-    }
     function showSignIn() {
       product=null;productContext=null;match=null;
       store.set({view:"sign-in",title:"Sign in to compare prices",copy:"COMPR uses your account to track price checks and recognise your plan and limit.",usageNote:"You only need to sign in once.",primary:"Sign in with Apple",product:null});
@@ -165,8 +173,7 @@
       show(ui.usageNote,Boolean(state.usageNote)); text(ui.usageNote,state.usageNote);
       if (state.product) {
         text(ui.productName, state.product.name); text(ui.store, state.product.webshop);
-        const variantLabel=selectedSizeLabel(state.product);
-        text(ui.variant,variantLabel);show(ui.variant,Boolean(variantLabel));
+        renderSelectedSize(ui.variant,state.product,isDutch);
         text(ui.currentPrice, localMoney(state.product.totalPrice ?? state.product.price, state.product.currency));
         if (ComprProduct.getSafeWebUrl(state.product.image)) { ui.image.src = state.product.image; ui.image.hidden = false; ui.image.parentElement.classList.remove("missing-image"); }
         else { ui.image.removeAttribute("src"); ui.image.hidden = true; ui.image.parentElement.classList.add("missing-image"); }
@@ -475,5 +482,5 @@
     if(new URL(window.location.href).searchParams.get("plans")==="1")openProSheet();
     return true;
   }
-  root.ComprSafariPopup={start,tabLocation,sameTabLocation};
+  root.ComprSafariPopup={start,tabLocation,sameTabLocation,reliableSelectedSize,renderSelectedSize};
 })(typeof globalThis!=="undefined"?globalThis:this);
