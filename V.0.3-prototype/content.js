@@ -101,8 +101,9 @@ async function getProductInfo() {
     "Accessories"
   ]);
   const isApparel = eligibility.isApparel && apparelCategories.has(category);
-  const selectedSize = getSelectedSize();
+  const selectedSize = getSelectedSize(jsonProduct);
   globalThis.__comprLastEligibilityDiagnostics.selectedSize = selectedSize.status;
+  globalThis.__comprLastEligibilityDiagnostics.selectedSizeEvidence = selectedSize.evidence || 'none';
   const availability = getAvailability(jsonProduct, isApparel);
   const detectedPrice = getPrice(jsonProduct);
   const storePolicies = getStorePolicies(jsonProduct);
@@ -122,6 +123,10 @@ async function getProductInfo() {
     material: (isApparel ? getMaterial(jsonProduct) : null) || "",
 
     selectedSize: isApparel ? selectedSize.value : null,
+    selectedVariants: isApparel && selectedSize.value ? {
+      size:{value:selectedSize.value,evidence:selectedSize.evidence || 'dom_selected_control'}
+    } : {},
+    selectedVariantDiagnostics:{size:{status:selectedSize.status,evidence:selectedSize.evidence || null}},
     sizeRequired: isApparel && !/accessories/i.test(category),
 
     sizes:

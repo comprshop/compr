@@ -54,8 +54,10 @@ const ComprApi = (() => {
     catch { return String(value || "").trim(); }
   }
   function legacyBinding(product) {
-    const fields = ["brand","model","modelTokens","mpn","productCode","ean","gtin","color","size","capacity","targetMarket","locale"];
-    return JSON.stringify(fields.map(key => product[key] ?? null));
+    const fields = ["brand","model","modelTokens","mpn","productCode","ean","gtin","color","size","capacity","selectedVariants","targetMarket","locale"];
+    return JSON.stringify(fields.map(key => key === "selectedVariants" && product[key] && typeof product[key] === "object"
+      ? Object.fromEntries(Object.entries(product[key]).sort(([left],[right])=>left.localeCompare(right)).map(([name,entry])=>[name,entry?.value ?? null]))
+      : product[key] ?? null));
   }
   function binding(product) {
     // A recoverable action belongs to one concrete page/product context.

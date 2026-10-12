@@ -9,19 +9,35 @@
     const current=tabLocation(right);
     return Boolean(left&&current&&left.tabId===current.tabId&&left.tabUrl===current.tabUrl);
   }
-  function reliableSelectedSize(value) {
-    if(!value||typeof value!=="object")return "";
+  function reliableSelectedVariants(value) {
+    if(!value||typeof value!=="object")return {};
+    const variants=root.ComprProduct?.normalizeSelectedVariants?.(value) || {};
     const hasExtracted=Object.prototype.hasOwnProperty.call(value,"selectedSize");
-    const raw=hasExtracted ? value.selectedSize : value.sizeRequired===true ? value.size : "";
-    const size=String(raw||"").trim().toUpperCase().replace(/^(EU|UK|US)\s*/,"$1 ");
-    return /^(?:(?:EU|UK|US) )?\d{1,2}(?:[.,]5)?$/.test(size) ? size : "";
+    if(!variants.size && hasExtracted && value.selectedSize) {
+      variants.size={value:String(value.selectedSize),evidence:"legacy_extracted_selection"};
+    } else if(!variants.size && !hasExtracted && value.sizeRequired===true && value.size) {
+      variants.size={value:String(value.size),evidence:"legacy_normalized_state"};
+    }
+    return variants;
   }
-  function renderSelectedSize(node,value,isDutch) {
+  function reliableSelectedSize(value) {
+    const raw=reliableSelectedVariants(value).size?.value;
+    const size=String(raw||"").trim().toUpperCase().replace(/^(EU|UK|US)\s*/,"$1 ");
+    return /^(?:(?:EU|UK|US) )?(?:\d{1,2}(?:[.,]5)?|XXS|XS|S|M|L|XL|XXL|XXXL)$/.test(size) ? size : "";
+  }
+  function renderSelectedVariants(node,value,isDutch) {
+    const variants=reliableSelectedVariants(value),labels=[];
     const size=reliableSelectedSize(value);
-    node.textContent=size ? `${isDutch ? "Maat" : "Size"} ${size}` : "";
-    node.classList.toggle("hidden",!size);
+    if(size)labels.push(`${isDutch ? "Maat" : "Size"} ${size}`);
+    for(const key of ["capacity","color","variant","pack"]){
+      const variant=String(variants[key]?.value||"").trim();
+      if(variant&&!labels.some(label=>label.toLowerCase().includes(variant.toLowerCase())))labels.push(variant);
+    }
+    node.textContent=labels.join(" · ");
+    node.classList.toggle("hidden",!labels.length);
     return node.textContent;
   }
+  const renderSelectedSize=renderSelectedVariants;
 
   async function start() {
     if (started) return false;
@@ -238,6 +254,10 @@
         await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},files:["shared/productEligibility.js","shared/localeParsing.js", "detectors/price.js","detectors/brand.js","detectors/color.js","detectors/material.js","detectors/sizes.js","detectors/availability.js","detectors/policies.js","detectors/discountCodes.js","detectors/category.js","detectors/productId.js","detectors/productName.js","content.js"]});
         const result=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>typeof getProductInfo==="function"?getProductInfo():null});
         const extracted=result?.[0]?.result || null;
+        if(extracted)console.info('[COMPR_VARIANT_DIAGNOSTIC]',{selectedSize:extracted.selectedSize || null,
+          size:extracted.size || null,sizeRequired:extracted.sizeRequired===true,
+          selectedVariants:root.ComprProduct.normalizeSelectedVariants(extracted),
+          evidence:extracted.selectedVariantDiagnostics?.size?.evidence || null});
         if (!ComprProductEligibility.isEligibleProductPayload(extracted)) return { tab, product: null, context: null };
         const context={source:"safari-tab",tabId:tab.id,tabUrl:tab.url || extracted.url,
           fingerprint:ComprApi.productFingerprint(extracted)};
@@ -482,5 +502,5 @@
     if(new URL(window.location.href).searchParams.get("plans")==="1")openProSheet();
     return true;
   }
-  root.ComprSafariPopup={start,tabLocation,sameTabLocation,reliableSelectedSize,renderSelectedSize};
+  root.ComprSafariPopup={start,tabLocation,sameTabLocation,reliableSelectedVariants,reliableSelectedSize,renderSelectedVariants,renderSelectedSize};
 })(typeof globalThis!=="undefined"?globalThis:this);

@@ -260,9 +260,9 @@ function getUnavailableSizes() {
 }
 
 // Read only explicit selected controls; available-size lists never imply selection.
-function getSelectedSize() {
-  const found = new Set();
-  const add = (element, context = '') => {
+function getSelectedSize(jsonProduct = null) {
+  const found = new Map();
+  const add = (element, context = '', evidence = 'dom_selected_control') => {
     if (isUnavailableSizeElement(element)) return;
     const raw = element.getAttribute?.('data-size') || element.getAttribute?.('data-size-value') || element.getAttribute?.('aria-label') || element.textContent || element.value;
     const systems = [...new Set((String(context).match(/\b(?:EU|UK|US)\b/gi) || []).map(v=>v.toUpperCase()))];
@@ -272,23 +272,32 @@ function getSelectedSize() {
     if (values.length !== 1) return;
     let value = values[0];
     if (!/^(EU|UK|US)\b/i.test(value) && /^\d/.test(value) && systems.length === 1) value = `${systems[0]} ${value}`;
-    found.add(value.toUpperCase().replace(',', '.').replace(/^(EU|UK|US)\s*/, '$1 '));
+    found.set(value.toUpperCase().replace(',', '.').replace(/^(EU|UK|US)\s*/, '$1 '), evidence);
   };
   for (const select of document.querySelectorAll('select')) {
     const context = [select.name, select.id, select.getAttribute?.('aria-label')].filter(Boolean).join(' ');
     if (!/(size|maat)/i.test(context) || select.disabled) continue;
-    for (const option of select.selectedOptions || []) add(option, context);
+    for (const option of select.selectedOptions || []) add(option, context, 'dom_selected_option');
   }
-  for (const element of document.querySelectorAll('[aria-checked="true"], [aria-selected="true"], input:checked, [aria-pressed="true"]')) {
+  const selectedSelector='[aria-checked="true"], [aria-selected="true"], [aria-pressed="true"], [aria-current="true"], [data-selected="true"], [data-state="checked"], [data-state="selected"], input:checked';
+  for (const element of document.querySelectorAll(selectedSelector)) {
     if (isUnavailableSizeElement(element)) continue;
-    const group = element.closest?.('[data-attr="size"], [data-attribute="size"], [data-attribute-id="size"], .size-selector, .size-swatches, [role="radiogroup"], fieldset');
-    const context = [element.name, element.id, element.getAttribute?.('aria-label'), group?.getAttribute?.('aria-label'), group?.getAttribute?.('data-attr'), group?.getAttribute?.('data-attribute'), group?.getAttribute?.('data-attribute-id'), group?.className,
+    const group = element.closest?.('[data-attr="size"], [data-attribute="size"], [data-attribute-id="size"], [data-testid*="size" i], [class*="size" i], .size-selector, .size-swatches, [role="radiogroup"], fieldset');
+    const context = [element.name, element.id, element.getAttribute?.('aria-label'), element.getAttribute?.('data-testid'), group?.getAttribute?.('aria-label'), group?.getAttribute?.('data-testid'), group?.getAttribute?.('data-attr'), group?.getAttribute?.('data-attribute'), group?.getAttribute?.('data-attribute-id'), group?.className,
       group?.querySelector?.('legend')?.textContent].filter(Boolean).join(' ');
     if (!/(size|maat)/i.test(context)) continue;
-    const label = element.labels?.[0];
+    const escapedId = element.id && typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(element.id) : element.id;
+    const label = element.labels?.[0] || (escapedId ? document.querySelector?.(`label[for="${escapedId}"]`) : null);
     add(label || element, context);
   }
-  return { value: found.size === 1 ? [...found][0] : null, status: found.size > 1 ? 'ambiguous' : found.size === 1 ? 'present' : 'missing' };
+  if (!found.size && jsonProduct && !Array.isArray(jsonProduct)) {
+    const structured = getSizeValues(jsonProduct.size);
+    const offer = Array.isArray(jsonProduct.offers) ? jsonProduct.offers[0] : jsonProduct.offers;
+    if (structured.length === 1 && offer && !Array.isArray(jsonProduct.offers)) found.set(structured[0], 'structured_current_product');
+  }
+  const entry=found.size===1 ? [...found.entries()][0] : null;
+  return { value: entry?.[0] || null, evidence:entry?.[1] || null,
+    status: found.size > 1 ? 'ambiguous' : found.size === 1 ? 'present' : 'missing' };
 }
 
 if (typeof module !== "undefined" && module.exports) {

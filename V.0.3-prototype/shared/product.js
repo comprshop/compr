@@ -65,6 +65,20 @@
       ? "" : text;
   }
 
+  const SELECTED_VARIANT_EVIDENCE = new Set(["dom_selected_control","dom_selected_option","structured_current_product","url_bound_variant"]);
+  function normalizeSelectedVariants(product = {}) {
+    const result = {};
+    const supplied = product.selectedVariants && typeof product.selectedVariants === "object" ? product.selectedVariants : {};
+    const add = (key, entry) => {
+      if (!entry || typeof entry !== "object" || !SELECTED_VARIANT_EVIDENCE.has(entry.evidence)) return;
+      const value=cleanDetectedValue(entry.value);
+      if(value)result[key]={value,evidence:entry.evidence};
+    };
+    for(const key of ["size","capacity","color","variant","pack"])add(key,supplied[key]);
+    if(!result.size && cleanDetectedValue(product.selectedSize)) result.size={value:cleanDetectedValue(product.selectedSize),evidence:"dom_selected_control"};
+    return result;
+  }
+
   function toSearchPayload(product = {}) {
     const url = getSafeWebUrl(product.canonicalUrl) || getSafeWebUrl(product.url) || null;
     let webshop = cleanDetectedValue(product.webshop);
@@ -81,16 +95,20 @@
     const isConverted = Number.isFinite(converted) && converted > 0 && Boolean(product.convertedCurrency);
     if (!isConverted && detectedCurrency && detectedCurrency !== currency) price = null;
     const locale = String(product.locale ?? root.navigator?.language ?? "").slice(0, 35);
-    const selectedSize = cleanDetectedValue(product.selectedSize || product.size);
+    const selectedVariants=normalizeSelectedVariants(product);
+    const selectedSize = cleanDetectedValue(selectedVariants.size?.value || product.selectedSize || product.size);
+    const selectedColor = cleanDetectedValue(selectedVariants.color?.value || product.color);
+    const selectedCapacity = cleanDetectedValue(selectedVariants.capacity?.value || product.capacity);
     const sizeSystem = /^(EU|UK|US)$/i.test(product.sizeSystem || "") ? product.sizeSystem.toUpperCase() : "";
     const boundSize = sizeSystem && /^\d{1,2}(?:[.,]5)?$/.test(selectedSize) ? `${sizeSystem} ${selectedSize}` : selectedSize;
     return {
       name: cleanDetectedValue(product.name), brand: cleanDetectedValue(product.brand),
-      category: cleanDetectedValue(product.category), color: cleanDetectedValue(product.color),
+      category: cleanDetectedValue(product.category), color: selectedColor,
       ...(product.sizeRequired === true ? {sizeRequired:true} : {}),
+      ...(Object.keys(selectedVariants).length ? {selectedVariants} : {}),
       ...(product.sizeSystem ? {sizeSystem:cleanDetectedValue(product.sizeSystem)} : {}),
       material: cleanDetectedValue(product.material), size: boundSize,
-      condition: cleanDetectedValue(product.condition), capacity: cleanDetectedValue(product.capacity),
+      condition: cleanDetectedValue(product.condition), capacity: selectedCapacity,
       storage: cleanDetectedValue(product.storage), screenSize: cleanDetectedValue(product.screenSize),
       productCode: cleanDetectedValue(product.productCode) || null,
       sku: cleanDetectedValue(product.sku) || null, mpn: cleanDetectedValue(product.mpn) || null,
@@ -199,6 +217,7 @@
     resolveSafeWebUrl,
     parseProductPrice,
     cleanDetectedValue,
+    normalizeSelectedVariants,
     toSearchPayload,
     getProductIdentity,
     getProductCodes,

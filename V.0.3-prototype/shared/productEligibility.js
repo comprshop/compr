@@ -230,7 +230,7 @@
       pageType:'not_blocked', documentReadyState: ['loading','interactive','complete'].includes(doc.readyState) ? doc.readyState : 'unknown',
       currency:helpers.getPriceCurrency?.(jsonProduct,detectedPrice) ? 'present' : 'unknown',
       priceProvenance:helpers.getPriceProvenance?.(jsonProduct) || null,
-      selectedSize:helpers.getSelectedSize?.().status || 'unknown'};
+      selectedSize:helpers.getSelectedSize?.(jsonProduct).status || 'unknown'};
     return { eligible, diagnostics, reason: eligible ? "strong_product_evidence" : "insufficient_product_evidence", jsonProduct, isApparel };
   }
 

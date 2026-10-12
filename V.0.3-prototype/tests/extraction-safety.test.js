@@ -33,7 +33,7 @@ test('extracted selected size survives actual content product and API payload, i
  const payload=Product.toSearchPayload(extracted);assert.equal(payload.size,'EU 42');assert.equal(payload.mpn,'CN8490-100');assert.equal(payload.sizeRequired,true);
  const fingerprint=JSON.stringify([payload.url,JSON.stringify(['brand','model','modelTokens','mpn','productCode','ean','gtin','color','size','capacity','targetMarket','locale'].map(key=>payload[key]??null))]);
  assert.match(fingerprint,/EU 42/);
- const unknown=Product.toSearchPayload({...extracted,selectedSize:null});assert.equal(unknown.size,'');
+ const unknown=Product.toSearchPayload({...extracted,selectedSize:null,selectedVariants:{}});assert.equal(unknown.size,'');
 });
 test('eligibility diagnostic explains missing evidence without retaining page text or URL',()=>{
  const doc={title:'Secret account name',readyState:'complete',querySelector:q=>q==='h1'?node('Dell Pro P 24 Monitor - P2426H'):null,querySelectorAll:()=>[]};

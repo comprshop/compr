@@ -72,6 +72,16 @@ test('project and account namespaces never reuse foreign action IDs',async()=>{
 test('explicit variant binding prevents an old payload from replacing another variant',async()=>{
  const f=fixture();await f.api().search(p,'white');f.clock.now+=11000;await f.api().search({...p,color:'black'},'black');assert.equal(f.calls.at(-1).body.requestId,'black');assert.equal(f.calls.at(-1).body.product.color,'black');
 });
+test('old pending EU42 action is never recovered for current EU43 in the same tab',async()=>{
+ const f=fixture(),a=f.api(),base={...p,name:'Nike Air Max 90',mpn:'CN8490-100',url:'https://nike.example/air-max-90',sizeRequired:true};
+ const eu42={...base,selectedVariants:{size:{value:'EU 42',evidence:'dom_selected_control'}}};
+ const eu43={...base,selectedVariants:{size:{value:'EU 43',evidence:'dom_selected_control'}}};
+ f.setHandler(async()=>{throw Error('network');});
+ await assert.rejects(a.search(eu42,'eu42',{context:{source:'safari-tab',tabId:7,tabUrl:base.url,fingerprint:a.productFingerprint(eu42)}}));
+ f.clock.now+=11000;f.setHandler(async(url,o)=>f.reply(f.result(JSON.parse(o.body).requestId)));
+ await a.search(eu43,'eu43',{context:{source:'safari-tab',tabId:7,tabUrl:base.url,fingerprint:a.productFingerprint(eu43)}});
+ assert.equal(f.calls.at(-1).body.requestId,'eu43');assert.equal(f.calls.at(-1).body.product.size,'EU 43');
+});
 test('recovery network failure preserves all confirmation expiry and binding fields',async()=>{
  const f=fixture();await f.api().search(p,'one');const before=f.pending()[0][1];f.setHandler(async()=>{throw Error('network');});await assert.rejects(f.api().search(p,'two'));const after=f.pending()[0][1];assert.deepEqual(after.confirmation,before.confirmation);assert.deepEqual(after.product,before.product);
 });
