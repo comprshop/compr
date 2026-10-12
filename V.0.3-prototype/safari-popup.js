@@ -1,6 +1,7 @@
 (function (root) {
   "use strict";
   let started = false;
+  const productDiagnosticRunId = typeof root.crypto?.randomUUID === "function" ? root.crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
   function tabLocation(tab) {
     return tab?.id ? { tabId: tab.id, tabUrl: String(tab.url || "") } : null;
@@ -264,7 +265,7 @@
     }
 
     function safeProductDiagnostic(stage,tab,details={}) {
-      const diagnostic={version:1,stage:String(stage||"unknown").slice(0,80),recordedAt:new Date().toISOString(),
+      const diagnostic={version:1,runId:productDiagnosticRunId,stage:String(stage||"unknown").slice(0,80),recordedAt:new Date().toISOString(),
         projectRef:String(ComprRuntimeConfig.authProjectRef||"").slice(0,32),tabId:Number.isInteger(tab?.id)?tab.id:null,
         tabUrl:String(tab?.url||"").slice(0,600),details};
       void ComprBrowser.runtime.sendNativeMessage("nl.getcompr.compr",{action:"diagnostic.product",

@@ -144,6 +144,7 @@ test('comparison copy never claims that every variant is proven',()=>{
 
 test('physical extraction diagnostics persist the first safe rejection stage without search',()=>{
  assert.match(source,/action:"diagnostic\.product"/);
+ assert.match(source,/runId:productDiagnosticRunId/);
  assert.match(source,/"extraction_returned_empty"/);
  assert.match(source,/"payload_rejected"/);
  assert.match(source,/eligibility:page\.eligibility\|\|null/);

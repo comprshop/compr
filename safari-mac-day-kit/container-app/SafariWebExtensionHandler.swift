@@ -111,7 +111,12 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             return
         }
         do {
-            try data.write(to: container.appendingPathComponent("compr-product-diagnostic.json"), options: .atomic)
+            let target = container.appendingPathComponent("compr-product-diagnostics.json")
+            let existing = (try? Data(contentsOf: target))
+                .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [[String: Any]] } ?? []
+            let records = Array((existing + [diagnostic]).suffix(80))
+            let traceData = try JSONSerialization.data(withJSONObject: records, options: [.sortedKeys])
+            try traceData.write(to: target, options: .atomic)
             complete(context, payload: ["ok": true])
         } catch {
             complete(context, payload: ["ok": false, "code": "DIAGNOSTIC_WRITE_FAILED"])
