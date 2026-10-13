@@ -39,7 +39,7 @@
     return matches.length === 1 ? matches[0] : null;
   }
 
-  function productFromVariantGroup(group, pageUrl = "", evidence = {}) {
+  function productFromVariantGroup(group, pageUrl = "", evidence = {}, diagnostic = null) {
     if (!asTypes(group?.["@type"]).includes("productgroup")) return null;
     const variants = (Array.isArray(group.hasVariant) ? group.hasVariant : [group.hasVariant])
       .filter(variant => variant && isProductType(variant["@type"]));
@@ -56,6 +56,22 @@
     const directOffer = directOffers.length === 1 ? directOffers[0] :
       directOffers.length === groupOffers.length && new Set(directOffers.map(offerSignature)).size === 1 ? directOffers[0] : null;
     const declaresVariants = Object.prototype.hasOwnProperty.call(group, "hasVariant");
+    if (diagnostic) {
+      diagnostic.kind = "direct_product_group";
+      diagnostic.declaresVariants = declaresVariants;
+      diagnostic.variantCount = Math.min(variants.length, 9);
+      diagnostic.offerCount = Math.min(groupOffers.length, 9);
+      diagnostic.concreteNewOfferCount = Math.min(directOffers.length, 9);
+      diagnostic.offersEquivalent = directOffers.length > 1 && directOffers.length === groupOffers.length && new Set(directOffers.map(offerSignature)).size === 1;
+      diagnostic.currentPathMatches = Boolean(pagePath && groupPath === pagePath);
+      diagnostic.hasIdentifier = validIdentifier(groupIdentifier);
+      diagnostic.hasName = Boolean(group.name);
+      diagnostic.decision = declaresVariants ? "continue_variant_selection" :
+        !pagePath || groupPath !== pagePath ? "reject_path_mismatch" :
+        !validIdentifier(groupIdentifier) ? "reject_identifier_missing" :
+        !group.name ? "reject_name_missing" :
+        !directOffer ? "reject_direct_offer_ambiguous" : "accept_direct_offer";
+    }
     if (!declaresVariants && pagePath && groupPath === pagePath && directOffer && validIdentifier(groupIdentifier) && group.name) {
       return { ...group, offers: directOffer, "@type": "Product", hasVariant:variants };
     }
@@ -155,7 +171,7 @@
     } catch { return true; }
   }
 
-  function selectMainJsonProduct(doc, pageUrl = "") {
+  function selectMainJsonProduct(doc, pageUrl = "", selectionDiagnostic = null) {
     const candidates = [];
     const priceElement = doc.querySelector('[itemprop="offers"] [itemprop="price"]');
     const conditionElement = doc.querySelector('[itemprop="offers"] [itemprop="itemCondition"]');
@@ -184,17 +200,17 @@
       const add = item => {
         const resolved = resolve(item);
         if (isProductType(resolved?.["@type"])) candidates.push(resolved);
-        const grouped = productFromVariantGroup(resolved, pageUrl, evidence);
+        const grouped = productFromVariantGroup(resolved, pageUrl, evidence, selectionDiagnostic);
         if (grouped) candidates.push(grouped);
         for (const nested of [resolved?.object, resolved?.mainEntity]) {
           if (isProductType(nested?.["@type"])) candidates.push(nested);
-          const nestedGroup = productFromVariantGroup(nested, pageUrl, evidence);
+          const nestedGroup = productFromVariantGroup(nested, pageUrl, evidence, selectionDiagnostic);
           if (nestedGroup) candidates.push(nestedGroup);
         }
       };
       roots.forEach(add);
       if (graphNodes.length) {
-        const resolvedGroups = graphNodes.map(item => resolve(item)).map(group => productFromVariantGroup(group, pageUrl, evidence)).filter(Boolean);
+        const resolvedGroups = graphNodes.map(item => resolve(item)).map(group => productFromVariantGroup(group, pageUrl, evidence, selectionDiagnostic)).filter(Boolean);
         if (resolvedGroups.length) candidates.push(...resolvedGroups);
         else graphNodes.filter(item => isProductType(item?.["@type"])).forEach(add);
       }
@@ -233,7 +249,8 @@
     try { hostname = new URL(url).hostname; } catch { return { eligible: false, reason: "invalid_url", jsonProduct: null, isApparel: false }; }
     if (blockedPage(url)) return { eligible: false, reason: "blocked_page_type", jsonProduct: null, isApparel: false, diagnostics: {version:1, reason:"blocked_page_type", pageType:"blocked"} };
 
-    const jsonProduct = selectMainJsonProduct(doc, url);
+    const structuredSelection = {};
+    const jsonProduct = selectMainJsonProduct(doc, url, structuredSelection);
     const visibleName = String(doc.querySelector("h1")?.innerText || "").trim();
     const structuredName = String(jsonProduct?.name || "").trim();
     const name = structuredName || visibleName;
@@ -260,7 +277,8 @@
       pageType:'not_blocked', documentReadyState: ['loading','interactive','complete'].includes(doc.readyState) ? doc.readyState : 'unknown',
       currency:helpers.getPriceCurrency?.(jsonProduct,detectedPrice) ? 'present' : 'unknown',
       priceProvenance:helpers.getPriceProvenance?.(jsonProduct) || null,
-      selectedSize:helpers.getSelectedSize?.(jsonProduct).status || 'unknown'};
+      selectedSize:helpers.getSelectedSize?.(jsonProduct).status || 'unknown',
+      structuredSelection:Object.keys(structuredSelection).length ? structuredSelection : null};
     return { eligible, diagnostics, reason: eligible ? "strong_product_evidence" : "insufficient_product_evidence", jsonProduct, isApparel };
   }
 

@@ -127,3 +127,17 @@ test('physical diagnostics enforce cycle depth node and array bounds',()=>{
  assert.ok(paths.some(item=>item.path==='BuyAction.self'&&item.cycle===true));
  assert.doesNotMatch(JSON.stringify(shape),/private-/);
 });
+
+test('ProductGroup selection diagnostics retain decisions but no product values',()=>{
+ const url='https://shop.example/product/current?private=tracking';
+ const group={'@type':'ProductGroup',name:'PRIVATE SONY NAME',sku:'PRIVATE-SKU-123',url,offers:[
+  {'@type':'Offer',price:34.99,priceCurrency:'EUR',url,itemCondition:'https://schema.org/NewCondition'},
+  {'@type':'Offer',price:35.99,priceCurrency:'EUR',url,itemCondition:'https://schema.org/NewCondition'}]};
+ const json=node(JSON.stringify({'@type':'BuyAction',object:group}));
+ const doc={title:'PRIVATE TITLE',readyState:'complete',body:{innerText:'PRIVATE BODY'},querySelector:q=>q==='h1'?node('PRIVATE H1'):null,
+  querySelectorAll:q=>q.includes('ld+json')?[json]:q.startsWith('button')?[node('In den Warenkorb')]:[]};
+ const result=Eligibility.assessPage(doc,url,{getPrice:()=> '34,99 EUR',getPriceCurrency:()=> 'EUR',getPriceProvenance:()=>({source:'page_text'}),getProductId:()=>({sku:'PRIVATE-SKU-123'}),getSelectedSize:()=>({status:'missing'})});
+ assert.equal(result.diagnostics.structuredSelection.decision,'reject_direct_offer_ambiguous');
+ assert.deepEqual(result.diagnostics.structuredSelection,{kind:'direct_product_group',declaresVariants:false,variantCount:0,offerCount:2,concreteNewOfferCount:2,offersEquivalent:false,currentPathMatches:true,hasIdentifier:true,hasName:true,decision:'reject_direct_offer_ambiguous'});
+ assert.doesNotMatch(JSON.stringify(result.diagnostics),/PRIVATE|34\.99|35\.99|shop\.example/);
+});
