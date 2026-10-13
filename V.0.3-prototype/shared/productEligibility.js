@@ -43,8 +43,23 @@
     if (!asTypes(group?.["@type"]).includes("productgroup")) return null;
     const variants = (Array.isArray(group.hasVariant) ? group.hasVariant : [group.hasVariant])
       .filter(variant => variant && isProductType(variant["@type"]));
-    if (!variants.length) return null;
     const pagePath = normalizedProductPath(pageUrl);
+    const groupOffers = (Array.isArray(group.offers) ? group.offers : [group.offers]).filter(Boolean);
+    const groupPath = normalizedProductPath(group.url || groupOffers[0]?.url, pageUrl);
+    const groupIdentifier = group.gtin || group.gtin8 || group.gtin12 || group.gtin13 || group.gtin14 || group.mpn || group.sku;
+    const directOffers = groupOffers.filter(offer => asTypes(offer?.["@type"]).includes("offer") &&
+      (!offer.itemCondition || /(?:^|[/#])NewCondition$/i.test(offer.itemCondition)) && concreteOffer({ offers: offer }));
+    const offerSignature = offer => JSON.stringify({
+      price:Number(offer.price ?? offer.lowPrice ?? offer.highPrice), currency:String(offer.priceCurrency || "").toUpperCase(),
+      path:normalizedProductPath(offer.url, pageUrl), condition:String(offer.itemCondition || ""), availability:String(offer.availability || "")
+    });
+    const directOffer = directOffers.length === 1 ? directOffers[0] :
+      directOffers.length === groupOffers.length && new Set(directOffers.map(offerSignature)).size === 1 ? directOffers[0] : null;
+    const declaresVariants = Object.prototype.hasOwnProperty.call(group, "hasVariant");
+    if (!declaresVariants && pagePath && groupPath === pagePath && directOffer && validIdentifier(groupIdentifier) && group.name) {
+      return { ...group, offers: directOffer, "@type": "Product", hasVariant:variants };
+    }
+    if (!variants.length) return null;
     const pathMatches = pagePath ? variants.filter(variant => {
       const offer = Array.isArray(variant.offers) ? variant.offers[0] : variant.offers;
       return normalizedProductPath(variant.url || offer?.url, pageUrl) === pagePath;
@@ -71,14 +86,8 @@
       return { ...selected, offers: offer, brand: selected.brand || group.brand, category: selected.category || group.category,
         image: selected.image || group.image, description: selected.description || group.description };
     }
-    const groupOffers = (Array.isArray(group.offers) ? group.offers : [group.offers]).filter(Boolean);
-    const groupPath = normalizedProductPath(group.url || groupOffers[0]?.url, pageUrl);
-    const groupIdentifier = group.gtin || group.gtin8 || group.gtin12 || group.gtin13 || group.gtin14 || group.mpn || group.sku;
-    const directGroupOffer = groupOffers.length === 1 &&
-      asTypes(groupOffers[0]?.["@type"]).includes("offer") && concreteOffer(group);
-    if (pagePath && groupPath === pagePath && directGroupOffer && validIdentifier(groupIdentifier) && group.name) {
-      const offer = selectCurrentOffer(group, pageUrl, evidence);
-      return offer ? { ...group, offers: offer, "@type": "Product", hasVariant: variants } : null;
+    if (pagePath && groupPath === pagePath && directOffer && validIdentifier(groupIdentifier) && group.name) {
+      return { ...group, offers: directOffer, "@type": "Product", hasVariant:variants };
     }
     const sharedValue = getter => {
       const values = [...new Set(variants.map(getter).map(value => String(value || "").trim()).filter(Boolean))];

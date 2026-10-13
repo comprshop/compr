@@ -40,4 +40,28 @@ test('Saturn-style @graph ProductGroup resolves @id variant and offer without we
  const result=Eligibility.assessPage(doc({h1:'Sony WH-CH520 Black',scripts:[graph],buy:true}),url,helpers);
  assert.equal(result.eligible,true);assert.equal(result.jsonProduct.mpn,'WH-CH520');assert.equal(result.jsonProduct.offers.price,34.99);
 });
+test('physical BuyAction ProductGroup with equivalent direct offers is selected without variants',()=>{
+ const url='https://shop.example/de/product/sony-whch520-103122401.html?tracking=1';
+ const offer={"@type":"Offer",price:34.99,priceCurrency:'EUR',url:'https://shop.example/de/product/sony-whch520-103122401.html',itemCondition:'https://schema.org/NewCondition',availability:'https://schema.org/InStock'};
+ const group={"@type":"ProductGroup",name:'Sony WH-CH520 Black',brand:{"@type":"Brand",name:'Sony'},sku:'103122401',gtin13:'4548736142374',
+  image:['https://img.example/sony.jpg'],url:'https://shop.example/de/product/sony-whch520-103122401.html',offers:[offer,{...offer}]};
+ const result=Eligibility.assessPage(doc({h1:group.name,scripts:[{"@type":"BuyAction",object:group}],buy:true}),url,helpers);
+ assert.equal(result.eligible,true);assert.equal(result.jsonProduct.name,group.name);assert.equal(result.jsonProduct.gtin13,group.gtin13);assert.equal(result.jsonProduct.offers.price,34.99);
+});
+test('BuyAction ProductGroup with materially different direct offers remains ambiguous',()=>{
+ const url='https://shop.example/de/product/sony-whch520-103122401.html';
+ const group={"@type":"ProductGroup",name:'Sony WH-CH520 Black',sku:'103122401',url,offers:[
+  {"@type":"Offer",price:34.99,priceCurrency:'EUR',url,itemCondition:'https://schema.org/NewCondition',availability:'https://schema.org/InStock'},
+  {"@type":"Offer",price:29.99,priceCurrency:'EUR',url,itemCondition:'https://schema.org/NewCondition',availability:'https://schema.org/InStock'}]};
+ assert.equal(Eligibility.selectMainJsonProduct(doc({scripts:[{"@type":"BuyAction",object:group}]}),url),null);
+});
+test('unrelated nested Product below BuyAction is not promoted',()=>{
+ const url='https://shop.example/de/product/current';
+ const action={"@type":"BuyAction",target:{"@type":"EntryPoint",result:{"@type":"Product",name:'Unrelated',sku:'OTHER',url,offers:{"@type":"Offer",price:1,priceCurrency:'EUR'}}}};
+ assert.equal(Eligibility.selectMainJsonProduct(doc({scripts:[action]}),url),null);
+});
+test('unresolved BuyAction ProductGroup reference remains fail closed',()=>{
+ const url='https://shop.example/de/product/current';
+ assert.equal(Eligibility.selectMainJsonProduct(doc({scripts:[{"@type":"BuyAction",object:{"@id":"#missing","@type":"ProductGroup"}}]}),url),null);
+});
 test('unresolved graph ProductGroup remains fail closed',()=>{const graph={'@graph':[{'@type':'ProductGroup',name:'Ambiguous',hasVariant:[{'@id':'#missing'}]}]};assert.equal(Eligibility.assessPage(doc({h1:'Ambiguous',scripts:[graph],buy:true,meta:true}),'https://shop.example/product/x',helpers).eligible,false);});
