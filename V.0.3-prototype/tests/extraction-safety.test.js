@@ -141,3 +141,18 @@ test('ProductGroup selection diagnostics retain decisions but no product values'
  assert.deepEqual(result.diagnostics.structuredSelection,{kind:'direct_product_group',declaresVariants:false,variantCount:0,offerCount:2,concreteNewOfferCount:2,offersEquivalent:false,currentPathMatches:true,hasIdentifier:true,hasName:true,decision:'reject_direct_offer_ambiguous'});
  assert.doesNotMatch(JSON.stringify(result.diagnostics),/PRIVATE|34\.99|35\.99|shop\.example/);
 });
+test('ProductGroup diagnostics identify the exact later variant-selection gate without values',()=>{
+ const url='https://shop.example/product/current';
+ const group={'@type':'ProductGroup',name:'PRIVATE NAME',sku:'PRIVATE-1234',url,
+  offers:{'@type':'Offer',price:34.99,priceCurrency:'EUR',url,itemCondition:'https://schema.org/NewCondition'},
+  hasVariant:[1,2].map(index=>({'@type':'Product',name:`PRIVATE VARIANT ${index}`,sku:'PRIVATE-1234',url:`https://shop.example/product/v${index}`,offers:{price:34.99}}))};
+ const json=node(JSON.stringify({'@type':'BuyAction',object:group}));
+ const doc={title:'',readyState:'complete',body:{innerText:''},querySelector:q=>q==='h1'?node('PRIVATE NAME'):null,
+  querySelectorAll:q=>q.includes('ld+json')?[json]:q.startsWith('button')?[node('In den Warenkorb')]:[]};
+ const result=Eligibility.assessPage(doc,url,{getPrice:()=> '34,99 EUR',getPriceCurrency:()=> 'EUR',getProductId:()=>({sku:'PRIVATE-1234'}),getSelectedSize:()=>({status:'missing'})});
+ assert.equal(result.eligible,false);
+ assert.equal(result.diagnostics.structuredSelection.variantPathMatchCount,0);
+ assert.equal(result.diagnostics.structuredSelection.variantIdentifierMatchCount,2);
+ assert.equal(result.diagnostics.structuredSelection.decision,'reject_variant_identifier_ambiguous');
+ assert.doesNotMatch(JSON.stringify(result.diagnostics.structuredSelection),/PRIVATE|1234|shop\.example/);
+});

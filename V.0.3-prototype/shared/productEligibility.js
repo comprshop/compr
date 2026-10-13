@@ -80,6 +80,7 @@
       const offer = Array.isArray(variant.offers) ? variant.offers[0] : variant.offers;
       return normalizedProductPath(variant.url || offer?.url, pageUrl) === pagePath;
     }) : [];
+    if (diagnostic) diagnostic.variantPathMatchCount = Math.min(pathMatches.length, 9);
     let selected = pathMatches.length === 1 ? pathMatches[0] : null;
     if (!selected && !pathMatches.length && normalizedProductPath(group.url, pageUrl) === pagePath) {
       // Group identifiers describe the current page, never choose by price or rank.
@@ -87,18 +88,28 @@
         const values = fields.map(key => group[key]).filter(validIdentifier);
         if (!values.length) continue;
         const matches = variants.filter(variant => fields.some(key => values.includes(variant[key])));
+        if (diagnostic) diagnostic.variantIdentifierMatchCount = Math.min(matches.length, 9);
         if (matches.length === 1) { selected = matches[0]; break; }
-        if (matches.length > 1) return null;
+        if (matches.length > 1) {
+          if (diagnostic) diagnostic.decision = "reject_variant_identifier_ambiguous";
+          return null;
+        }
       }
       if (selected) {
         const offer = selectCurrentOffer(group, pageUrl, evidence);
-        if (!offer) return null;
+        if (!offer) {
+          if (diagnostic) diagnostic.decision = "reject_group_offer_unresolved";
+          return null;
+        }
         selected = { ...selected, offers: offer, url: group.url };
       }
     }
     if (selected) {
       const offer = selectCurrentOffer(selected, pageUrl, evidence);
-      if (!offer) return null;
+      if (!offer) {
+        if (diagnostic) diagnostic.decision = "reject_variant_offer_unresolved";
+        return null;
+      }
       return { ...selected, offers: offer, brand: selected.brand || group.brand, category: selected.category || group.category,
         image: selected.image || group.image, description: selected.description || group.description };
     }
