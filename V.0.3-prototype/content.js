@@ -64,8 +64,59 @@ function getCanonicalProductUrl() {
 }
 
 function getProductRecognitionDiagnostics() {
+  const MAX_STRUCTURE_DEPTH = 6;
+  const MAX_STRUCTURE_PATHS = 96;
+  const MAX_ARRAY_ITEMS = 4;
   const typeList = value => (Array.isArray(value) ? value : [value]).map(item => String(item || "").split(/[\/#]/).pop()).filter(Boolean).slice(0, 6);
   const values = value => (Array.isArray(value) ? value : [value]).filter(Boolean);
+  const safeProperty = value => /^[A-Za-z@][A-Za-z0-9_:@.-]{0,47}$/.test(String(value || "")) ? String(value) : "[property]";
+  const structurePaths = roots => {
+    const idCounts = new Map();
+    const idSeen = new WeakSet();
+    const collectIds = (value, depth = 0) => {
+      if (!value || typeof value !== "object" || depth > MAX_STRUCTURE_DEPTH + 2 || idSeen.has(value)) return;
+      idSeen.add(value);
+      if (!Array.isArray(value) && typeof value["@id"] === "string") idCounts.set(value["@id"], (idCounts.get(value["@id"]) || 0) + 1);
+      if (Array.isArray(value)) value.slice(0, MAX_ARRAY_ITEMS).forEach(item => collectIds(item, depth + 1));
+      else Object.values(value).forEach(item => collectIds(item, depth + 1));
+    };
+    roots.forEach(root => collectIds(root));
+
+    const paths = [];
+    const seen = new WeakSet();
+    const add = entry => { if (paths.length < MAX_STRUCTURE_PATHS) paths.push(entry); };
+    const visit = (value, path, depth) => {
+      if (paths.length >= MAX_STRUCTURE_PATHS || depth > MAX_STRUCTURE_DEPTH) return;
+      if (Array.isArray(value)) {
+        add({ path, depth, kind:"array" });
+        for (const item of value.slice(0, MAX_ARRAY_ITEMS)) visit(item, `${path}[]`, depth + 1);
+        return;
+      }
+      if (!value || typeof value !== "object") {
+        add({ path, depth, kind:value === null ? "null" : typeof value });
+        return;
+      }
+      if (seen.has(value)) { add({ path, depth, kind:"object", cycle:true }); return; }
+      seen.add(value);
+      const keys = Object.keys(value);
+      const id = typeof value["@id"] === "string" ? value["@id"] : "";
+      const referenceOnly = Boolean(id) && keys.every(key => key === "@id" || key === "@type");
+      const entry = { path, depth, kind:"object", schemaTypes:typeList(value["@type"]), hasId:Boolean(id) };
+      if (id) entry.referenceStatus = referenceOnly ? ((idCounts.get(id) || 0) > 1 ? "resolved" : "unresolved") : "definition";
+      add(entry);
+      if (depth === MAX_STRUCTURE_DEPTH) return;
+      for (const key of keys) {
+        if (key === "@context" || key === "@type" || key === "@id") continue;
+        visit(value[key], `${path}.${safeProperty(key)}`, depth + 1);
+        if (paths.length >= MAX_STRUCTURE_PATHS) break;
+      }
+    };
+    roots.forEach((root, index) => {
+      const rootType = typeList(root?.["@type"])[0] || "Root";
+      visit(root, roots.length === 1 ? rootType : `${rootType}[${index}]`, 0);
+    });
+    return { paths, truncated:paths.length >= MAX_STRUCTURE_PATHS };
+  };
   const urlRelation = value => {
     if (!value) return "missing";
     try {
@@ -80,6 +131,7 @@ function getProductRecognitionDiagnostics() {
     try {
       const parsed = JSON.parse(script.textContent || "null");
       const roots = Array.isArray(parsed) ? parsed : [parsed];
+      const nestedStructure = structurePaths(roots);
       const graph = roots.flatMap(root => Array.isArray(root?.["@graph"]) ? root["@graph"] : []);
       const nodes = [...roots, ...graph].filter(node => node && typeof node === "object");
       const ids = new Set(nodes.map(node => node["@id"]).filter(Boolean));
@@ -98,10 +150,12 @@ function getProductRecognitionDiagnostics() {
         graphTypes:[...new Set(graph.flatMap(node => typeList(node?.["@type"])))].slice(0,10),groups,
         productNodes:nodes.filter(node => typeList(node["@type"]).map(x => x.toLowerCase()).includes("product")).length,
         offerNodes:nodes.filter(node => typeList(node["@type"]).map(x => x.toLowerCase()).some(x => x === "offer" || x === "aggregateoffer")).length,
-        referenceCount:refs.length,resolvedReferences:refs.filter(id => ids.has(id)).length,unresolvedReferences:refs.filter(id => !ids.has(id)).length});
+        referenceCount:refs.length,resolvedReferences:refs.filter(id => ids.has(id)).length,unresolvedReferences:refs.filter(id => !ids.has(id)).length,
+        nestedPaths:nestedStructure.paths,nestedPathsTruncated:nestedStructure.truncated});
     } catch { blocks.push({parseError:true}); }
   }
-  return {version:1,blockCount:document.querySelectorAll('script[type="application/ld+json"]').length,blocks};
+  return {version:2,bounds:{maxDepth:MAX_STRUCTURE_DEPTH,maxPathsPerBlock:MAX_STRUCTURE_PATHS,maxArrayItems:MAX_ARRAY_ITEMS},
+    blockCount:document.querySelectorAll('script[type="application/ld+json"]').length,blocks};
 }
 async function getProductInfo() {
   const eligibility = ComprProductEligibility.assessPage(document, window.location, { getPrice, getProductId, getPriceCurrency, getPriceProvenance, getSelectedSize });

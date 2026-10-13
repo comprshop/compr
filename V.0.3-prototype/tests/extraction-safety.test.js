@@ -92,3 +92,38 @@ test('physical graph diagnostics preserve only compact ProductGroup reference sh
  assert.equal(shape.blocks[0].unresolvedReferences,1);
  assert.doesNotMatch(JSON.stringify(shape),/103122401|#group|#variant|#missing-offer/);
 });
+
+test('physical diagnostics expose bounded nested schema paths without values',()=>{
+ const secretValues=['PRIVATE PRODUCT NAME','4006381333931','CN8490-100','34.99','https://secret.example/item?token=secret'];
+ const buyAction={'@type':'BuyAction',target:{'@type':'EntryPoint',urlTemplate:secretValues[4]},result:{'@type':'ProductGroup','@id':'#group',name:secretValues[0],
+  hasVariant:[{'@id':'#variant'}],offers:{'@id':'#offer'}},sku:secretValues[1],mpn:secretValues[2],price:secretValues[3]};
+ const definitions={'@graph':[{'@id':'#variant','@type':'Product'},{'@id':'#offer','@type':'Offer'}]};
+ const doc={baseURI:'https://shop.example/product/current',querySelector:()=>null,querySelectorAll:q=>q.includes('ld+json')?[node(JSON.stringify([buyAction,definitions]))]:[]};
+ const globals={console,URL,document:doc,window:{location:new URL(doc.baseURI)},ComprBrowser:{runtime:{onMessage:()=>{}}}};
+ vm.createContext(globals);vm.runInContext(fs.readFileSync(path.join(__dirname,'../content.js'),'utf8'),globals);
+ const shape=globals.getProductRecognitionDiagnostics();
+ const paths=shape.blocks[0].nestedPaths;
+ assert.equal(shape.version,2);
+ assert.ok(paths.some(item=>item.path==='BuyAction[0].result'&&item.schemaTypes.includes('ProductGroup')));
+ assert.ok(paths.some(item=>item.path==='BuyAction[0].result.hasVariant'&&item.kind==='array'));
+ assert.ok(paths.some(item=>item.path==='BuyAction[0].result.hasVariant[]'&&item.referenceStatus==='resolved'));
+ assert.ok(paths.some(item=>item.path==='BuyAction[0].result.offers'&&item.referenceStatus==='resolved'));
+ const serialized=JSON.stringify(shape);
+ for(const secret of secretValues) assert.doesNotMatch(serialized,new RegExp(secret.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+});
+
+test('physical diagnostics enforce cycle depth node and array bounds',()=>{
+ const deep={"@type":"BuyAction"};let cursor=deep;
+ for(let i=0;i<20;i++){cursor.next={"@type":i===10?'Product':'Thing'};cursor=cursor.next;}
+ deep.items=Array.from({length:20},(_,i)=>({"@type":i===0?'Offer':'Thing',name:`private-${i}`}));
+ deep.self=deep;
+ const doc={baseURI:'https://shop.example/product/current',querySelector:()=>null,querySelectorAll:q=>q.includes('ld+json')?[node('{}')]:[]};
+ const globals={console,URL,JSON:{parse:()=>deep},document:doc,window:{location:new URL(doc.baseURI)},ComprBrowser:{runtime:{onMessage:()=>{}}}};
+ vm.createContext(globals);vm.runInContext(fs.readFileSync(path.join(__dirname,'../content.js'),'utf8'),globals);
+ const shape=globals.getProductRecognitionDiagnostics(),paths=shape.blocks[0].nestedPaths;
+ assert.ok(paths.length<=shape.bounds.maxPathsPerBlock);
+ assert.ok(paths.every(item=>item.depth<=shape.bounds.maxDepth));
+ assert.equal(paths.filter(item=>item.path==='BuyAction.items[]').length,shape.bounds.maxArrayItems);
+ assert.ok(paths.some(item=>item.path==='BuyAction.self'&&item.cycle===true));
+ assert.doesNotMatch(JSON.stringify(shape),/private-/);
+});
