@@ -48,6 +48,20 @@ test('physical BuyAction ProductGroup with equivalent direct offers is selected 
  const result=Eligibility.assessPage(doc({h1:group.name,scripts:[{"@type":"BuyAction",object:group}],buy:true}),url,helpers);
  assert.equal(result.eligible,true);assert.equal(result.jsonProduct.name,group.name);assert.equal(result.jsonProduct.gtin13,group.gtin13);assert.equal(result.jsonProduct.offers.price,34.99);
 });
+test('physical BuyAction selects the unique variant and current new offer using the visible page price',()=>{
+ const url='https://shop.example/de/product/sony-whch520-103122401.html?tracking=1';
+ const current='https://shop.example/de/product/sony-whch520-103122401.html';
+ const group={"@type":"ProductGroup",name:'Sony WH-CH520 Black',brand:{name:'Sony'},sku:'103122401',gtin13:'4548736142374',url:current,
+  offers:[{"@type":"Offer",price:34.99,priceCurrency:'EUR',url:current,itemCondition:'https://schema.org/NewCondition'},
+   {"@type":"Offer",price:29.99,priceCurrency:'EUR',url:current,itemCondition:'https://schema.org/RefurbishedCondition'},
+   {"@type":"Offer",priceCurrency:'EUR',url:current,itemCondition:'https://schema.org/NewCondition'}],
+  hasVariant:Array.from({length:6},(_,index)=>({"@type":"Product",name:`Sony WH-CH520 variant ${index+1}`,sku:index===0?'103122401':`OTHER-${index}`,url:`https://shop.example/de/product/variant-${index+1}`,offers:{price:34.99,priceCurrency:'EUR'}}))};
+ const physicalHelpers={...helpers,getPrice:p=>p?.offers?.price?`${p.offers.price} EUR`:'34,99 €'};
+ const result=Eligibility.assessPage(doc({h1:group.name,scripts:[{"@type":"BuyAction",object:group}],buy:true}),url,physicalHelpers);
+ assert.equal(result.eligible,true);assert.equal(result.jsonProduct.sku,'103122401');assert.equal(result.jsonProduct.offers.price,34.99);
+ assert.equal(result.diagnostics.structuredSelection.variantPathMatchCount,0);
+ assert.equal(result.diagnostics.structuredSelection.variantIdentifierMatchCount,1);
+});
 test('BuyAction ProductGroup with materially different direct offers remains ambiguous',()=>{
  const url='https://shop.example/de/product/sony-whch520-103122401.html';
  const group={"@type":"ProductGroup",name:'Sony WH-CH520 Black',sku:'103122401',url,offers:[

@@ -1,4 +1,5 @@
 (function (root) {
+  const LocaleParsing = root.ComprLocaleParsing || (typeof require === "function" ? require("./localeParsing.js") : null);
   const BLOCKED_HOST = /(^|\.)(bing\.com|google\.[a-z.]+|duckduckgo\.com|search\.yahoo\.com|baidu\.com|yandex\.[a-z.]+|chatgpt\.com|openai\.com|facebook\.com|instagram\.com|tiktok\.com|twitter\.com|x\.com|pinterest\.[a-z.]+|reddit\.com|linkedin\.com|youtube\.com|youtu\.be|snapchat\.com|threads\.net|tumblr\.com|discord\.com|openstreetmap\.org|mapquest\.com|maps\.apple\.com)$/i;
   const BLOCKED_PATH = /\/(search|zoeken|results?|category|categories|categorie|collectie|collections?|catalog|listing|browse|discover|maps?)(\/|$)/i;
   const UUID = /^(?:urn:uuid:)?[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -31,8 +32,8 @@
     const offers = (Array.isArray(product.offers) ? product.offers : [product.offers]).filter(Boolean);
     const isNew = offer => !offer.itemCondition || /(?:^|[/#])NewCondition$/i.test(offer.itemCondition);
     if (offers.length === 1) return isNew(offers[0]) && concreteOffer({ offers: offers[0] }) ? offers[0] : null;
-    // A new alternative is not evidence that the currently displayed offer is new.
-    if (!Number.isFinite(evidence.price) || !/(?:^|[/#])NewCondition$/i.test(evidence.condition || "")) return null;
+    // A new alternative is not enough: its URL and price must uniquely match the current page.
+    if (!Number.isFinite(evidence.price) || evidence.condition && !/(?:^|[/#])NewCondition$/i.test(evidence.condition)) return null;
     const matches = offers.filter(offer => /(?:^|[/#])NewCondition$/i.test(offer.itemCondition || "") &&
       concreteOffer({ offers: offer }) && Number(offer.price) === evidence.price &&
       normalizedProductPath(offer.url, pageUrl) === normalizedProductPath(pageUrl));
@@ -182,13 +183,13 @@
     } catch { return true; }
   }
 
-  function selectMainJsonProduct(doc, pageUrl = "", selectionDiagnostic = null) {
+  function selectMainJsonProduct(doc, pageUrl = "", selectionDiagnostic = null, pageEvidence = {}) {
     const candidates = [];
     const priceElement = doc.querySelector('[itemprop="offers"] [itemprop="price"]');
     const conditionElement = doc.querySelector('[itemprop="offers"] [itemprop="itemCondition"]');
     const rawPrice = priceElement?.getAttribute?.("content") || priceElement?.textContent;
     const evidence = {
-      price: rawPrice && /^\d+(?:\.\d+)?$/.test(String(rawPrice).trim()) ? Number(rawPrice) : NaN,
+      price: rawPrice && /^\d+(?:\.\d+)?$/.test(String(rawPrice).trim()) ? Number(rawPrice) : pageEvidence.price,
       condition: conditionElement?.getAttribute?.("href") || conditionElement?.getAttribute?.("content") || ""
     };
     const addDocument = parsed => {
@@ -261,13 +262,17 @@
     if (blockedPage(url)) return { eligible: false, reason: "blocked_page_type", jsonProduct: null, isApparel: false, diagnostics: {version:1, reason:"blocked_page_type", pageType:"blocked"} };
 
     const structuredSelection = {};
-    const jsonProduct = selectMainJsonProduct(doc, url, structuredSelection);
+    const detectedPagePrice = helpers.getPrice ? helpers.getPrice(null) : null;
+    const pagePriceAmount = LocaleParsing?.parseAmount?.(detectedPagePrice);
+    const jsonProduct = selectMainJsonProduct(doc, url, structuredSelection, {
+      price: Number.isFinite(pagePriceAmount) && pagePriceAmount > 0 ? pagePriceAmount : NaN
+    });
     const visibleName = String(doc.querySelector("h1")?.innerText || "").trim();
     const structuredName = String(jsonProduct?.name || "").trim();
     const name = structuredName || visibleName;
     const hasName = isValidProductName(name, doc.title, hostname);
     const jsonOffer = Boolean(jsonProduct && concreteOffer(jsonProduct));
-    const detectedPrice = helpers.getPrice ? helpers.getPrice(jsonProduct) : null;
+    const detectedPrice = jsonProduct && helpers.getPrice ? helpers.getPrice(jsonProduct) : detectedPagePrice;
     const hasPrice = detectedPrice && detectedPrice !== "Prijs niet gevonden";
     const ids = helpers.getProductId ? helpers.getProductId(jsonProduct) : null;
     const hasId = Boolean(ids && [ids.gtin, ids.mpn, ids.sku, ids.retailerSku, ids.productCode, ids.unknownCode].some(validIdentifier));
