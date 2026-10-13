@@ -58,4 +58,5 @@ test('Debug container exposes only sandbox product diagnostics through readable 
  assert.match(swift,/ComprNativeAuthConfig\.projectRef == "uhvukecryuvosuascics"/);
  assert.match(swift,/appendingPathComponent\("Documents", isDirectory: true\)/);
  assert.match(swift,/copyItem\(at: source, to: readableCopy\)/);
+ assert.match(swift,/override func viewDidAppear[\s\S]*exposeSandboxProductDiagnostics\(\)[\s\S]*consumePendingAppleSignIn\(\)/);
 });

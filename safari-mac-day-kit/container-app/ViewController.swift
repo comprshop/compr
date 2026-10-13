@@ -92,6 +92,9 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+#if DEBUG
+        exposeSandboxProductDiagnostics()
+#endif
         consumePendingAppleSignIn()
     }
 
