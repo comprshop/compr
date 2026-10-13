@@ -75,3 +75,20 @@ test('current Smyths Sony product evidence remains eligible and extracts the kno
  const extracted=await globals.getProductInfo();
  assert.equal(extracted.name,structured.name);assert.equal(extracted.price,'34.99 EUR');assert.equal(extracted.webshop,'www.smythstoys.com');assert.equal(extracted.image,structured.image);assert.equal(extracted.category,'TV & Audio');
 });
+
+test('physical graph diagnostics preserve only compact ProductGroup reference shape',()=>{
+ const url='https://www.saturn.de/de/product/sony-103122401.html';
+ const graph={'@graph':[
+  {'@id':'#group','@type':'ProductGroup',productGroupID:'103122401',variesBy:['color'],hasVariant:[{'@id':'#variant'}]},
+  {'@id':'#variant','@type':'ProductModel',offers:{'@id':'#missing-offer'}}
+ ]};
+ const doc={baseURI:url,querySelector:()=>null,querySelectorAll:q=>q.includes('ld+json')?[node(JSON.stringify(graph))]:[]};
+ const globals={console,URL,document:doc,window:{location:new URL(url)},ComprBrowser:{runtime:{onMessage:()=>{}}}};
+ vm.createContext(globals);vm.runInContext(fs.readFileSync(path.join(__dirname,'../content.js'),'utf8'),globals);
+ const shape=globals.getProductRecognitionDiagnostics();
+ assert.equal(shape.blockCount,1);assert.equal(shape.blocks[0].graphNodes,2);
+ assert.deepEqual(JSON.parse(JSON.stringify(shape.blocks[0].graphTypes)),['ProductGroup','ProductModel']);
+ assert.deepEqual(JSON.parse(JSON.stringify(shape.blocks[0].groups[0])),{hasId:true,productGroupId:true,variesBy:1,url:'missing',hasVariantCount:1,hasVariantRefs:1,offerCount:0,offerRefs:0});
+ assert.equal(shape.blocks[0].unresolvedReferences,1);
+ assert.doesNotMatch(JSON.stringify(shape),/103122401|#group|#variant|#missing-offer/);
+});

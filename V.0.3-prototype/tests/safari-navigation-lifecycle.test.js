@@ -148,6 +148,7 @@ test('physical extraction diagnostics persist the first safe rejection stage wit
  assert.match(source,/"extraction_returned_empty"/);
  assert.match(source,/"payload_rejected"/);
  assert.match(source,/eligibility:page\.eligibility\|\|null/);
+ assert.match(source,/structuredShape:typeof getProductRecognitionDiagnostics/);
  assert.doesNotMatch(source,/safeProductDiagnostic[\s\S]{0,500}ComprApi\.search/);
 });
 

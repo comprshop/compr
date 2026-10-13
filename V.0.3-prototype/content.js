@@ -62,6 +62,47 @@ function getCanonicalProductUrl() {
     return current.href;
   }
 }
+
+function getProductRecognitionDiagnostics() {
+  const typeList = value => (Array.isArray(value) ? value : [value]).map(item => String(item || "").split(/[\/#]/).pop()).filter(Boolean).slice(0, 6);
+  const values = value => (Array.isArray(value) ? value : [value]).filter(Boolean);
+  const urlRelation = value => {
+    if (!value) return "missing";
+    try {
+      const candidate = new URL(String(value), window.location.href);
+      const current = new URL(window.location.href);
+      if (candidate.hostname !== current.hostname) return "other_host";
+      return candidate.pathname.replace(/\/$/, "") === current.pathname.replace(/\/$/, "") ? "current_path" : "other_path";
+    } catch { return "invalid"; }
+  };
+  const blocks = [];
+  for (const script of [...document.querySelectorAll('script[type="application/ld+json"]')].slice(0, 8)) {
+    try {
+      const parsed = JSON.parse(script.textContent || "null");
+      const roots = Array.isArray(parsed) ? parsed : [parsed];
+      const graph = roots.flatMap(root => Array.isArray(root?.["@graph"]) ? root["@graph"] : []);
+      const nodes = [...roots, ...graph].filter(node => node && typeof node === "object");
+      const ids = new Set(nodes.map(node => node["@id"]).filter(Boolean));
+      const refs = [];
+      const scanRefs = value => {
+        for (const item of values(value)) if (item && typeof item === "object" && item["@id"] && Object.keys(item).length === 1) refs.push(item["@id"]);
+      };
+      nodes.forEach(node => { scanRefs(node.hasVariant); scanRefs(node.offers); scanRefs(node.mainEntity); scanRefs(node.object); });
+      const groups = nodes.filter(node => typeList(node["@type"]).map(x => x.toLowerCase()).includes("productgroup")).slice(0, 4).map(group => ({
+        hasId:Boolean(group["@id"]),productGroupId:Boolean(group.productGroupID),variesBy:values(group.variesBy).length,
+        url:urlRelation(group.url),hasVariantCount:values(group.hasVariant).length,
+        hasVariantRefs:values(group.hasVariant).filter(item => item?.["@id"] && Object.keys(item).length === 1).length,
+        offerCount:values(group.offers).length,offerRefs:values(group.offers).filter(item => item?.["@id"] && Object.keys(item).length === 1).length
+      }));
+      blocks.push({rootTypes:[...new Set(roots.flatMap(root => typeList(root?.["@type"])))],graphNodes:graph.length,
+        graphTypes:[...new Set(graph.flatMap(node => typeList(node?.["@type"])))].slice(0,10),groups,
+        productNodes:nodes.filter(node => typeList(node["@type"]).map(x => x.toLowerCase()).includes("product")).length,
+        offerNodes:nodes.filter(node => typeList(node["@type"]).map(x => x.toLowerCase()).some(x => x === "offer" || x === "aggregateoffer")).length,
+        referenceCount:refs.length,resolvedReferences:refs.filter(id => ids.has(id)).length,unresolvedReferences:refs.filter(id => !ids.has(id)).length});
+    } catch { blocks.push({parseError:true}); }
+  }
+  return {version:1,blockCount:document.querySelectorAll('script[type="application/ld+json"]').length,blocks};
+}
 async function getProductInfo() {
   const eligibility = ComprProductEligibility.assessPage(document, window.location, { getPrice, getProductId, getPriceCurrency, getPriceProvenance, getSelectedSize });
   globalThis.__comprLastEligibilityDiagnostics = eligibility.diagnostics || {reason:eligibility.reason};

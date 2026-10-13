@@ -287,12 +287,13 @@
           readyState:String(document.readyState||"unknown"),title:String(document.title||"").slice(0,240),
           h1:String(document.querySelector("h1")?.innerText||"").trim().slice(0,240),
           productMeta:Boolean(document.querySelector('meta[property="product:price:amount"], meta[property="og:price:amount"], meta[itemprop="price"]')),
-          jsonLdBlocks:document.querySelectorAll('script[type="application/ld+json"]').length
+          jsonLdBlocks:document.querySelectorAll('script[type="application/ld+json"]').length,
+          structuredShape:typeof getProductRecognitionDiagnostics==="function"?getProductRecognitionDiagnostics():null
         })});
         const page=diagnosticResult?.[0]?.result||{};
         safeProductDiagnostic(extracted?"extraction_returned_product":"extraction_returned_empty",tab,{
           eligibility:page.eligibility||null,readyState:page.readyState||"unknown",documentTitle:page.title||"",h1:page.h1||"",
-          productMeta:page.productMeta===true,jsonLdBlocks:Number(page.jsonLdBlocks||0),
+          productMeta:page.productMeta===true,jsonLdBlocks:Number(page.jsonLdBlocks||0),structuredShape:page.structuredShape||null,
           product:extracted?{name:String(extracted.name||"").slice(0,240),price:String(extracted.price||"").slice(0,80),
             currency:String(extracted.currency||"").slice(0,12),image:String(extracted.image||"").slice(0,600),
             webshop:String(extracted.webshop||"").slice(0,180),url:String(extracted.url||"").slice(0,600),
