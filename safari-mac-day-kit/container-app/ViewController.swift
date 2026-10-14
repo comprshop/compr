@@ -191,11 +191,14 @@ final class AppleSignInCoordinator: NSObject, ASAuthorizationControllerDelegate,
     func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
               let tokenData = credential.identityToken,
-              let idToken = String(data: tokenData, encoding: .utf8) else { finish(false); return }
+              let idToken = String(data: tokenData, encoding: .utf8),
+              let codeData = credential.authorizationCode,
+              let authorizationCode = String(data: codeData, encoding: .utf8) else { finish(false); return }
         let nonce = rawNonce
         Task {
             do {
                 let session = try await exchange(idToken: idToken, nonce: nonce)
+                try await registerRevocationCredential(authorizationCode, session: session)
                 guard let defaults = UserDefaults(suiteName: appGroup) else { throw URLError(.cannotCreateFile) }
                 defaults.set(session, forKey: ComprNativeAuthConfig.sessionKey)
                 defaults.set(credential.user, forKey: ComprNativeAuthConfig.appleUserKey)
@@ -221,6 +224,17 @@ final class AppleSignInCoordinator: NSObject, ASAuthorizationControllerDelegate,
               let userID = user["id"] as? String, UUID(uuidString: userID) != nil else { throw URLError(.userAuthenticationRequired) }
         let expiresIn = (payload["expires_in"] as? NSNumber)?.doubleValue ?? 3600
         return ["user": ["id": userID], "projectRef": ComprNativeAuthConfig.projectRef, "access_token": access, "refresh_token": refresh, "expires_at": floor(Date().timeIntervalSince1970 + expiresIn)]
+    }
+
+    private func registerRevocationCredential(_ code: String, session: [String: Any]) async throws {
+        guard let access = session["access_token"] as? String else { throw URLError(.userAuthenticationRequired) }
+        var request = URLRequest(url: URL(string: "\(ComprNativeAuthConfig.backendURL)/v1/auth/apple/credential")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(access)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["authorizationCode": code])
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.cannotConnectToHost) }
     }
 
     private func finish(_ success: Bool) {
@@ -250,6 +264,15 @@ private enum ComprNativeAuthConfig {
 #endif
     }
     static var url: String { "https://\(projectRef).supabase.co" }
+    static var backendURL: String {
+#if DEBUG
+        return "https://compr-backend-sandbox.onrender.com"
+#else
+        guard let value = Bundle.main.object(forInfoDictionaryKey: "COMPRBackendURL") as? String,
+              value.hasPrefix("https://") else { preconditionFailure("PRODUCTION_BACKEND_CONFIGURATION_REQUIRED") }
+        return value
+#endif
+    }
     static var publicKey: String {
 #if DEBUG
         guard let key = Bundle.main.object(forInfoDictionaryKey: "COMPRSandboxAnonKey") as? String,

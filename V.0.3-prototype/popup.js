@@ -230,6 +230,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
+      await ComprAuth.clearSession({ clearNative: true, requireNative: true });
       await ComprBrowser.storage.local.clear();
     } catch {
       billingStatus.textContent = "The server account was deleted, but local COMPR data could not be cleared. Clear the extension data or uninstall COMPR.";

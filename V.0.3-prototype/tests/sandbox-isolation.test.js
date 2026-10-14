@@ -60,3 +60,20 @@ test('Debug container exposes only sandbox product diagnostics through readable 
  assert.match(swift,/copyItem\(at: source, to: readableCopy\)/);
  assert.match(swift,/override func viewDidAppear[\s\S]*exposeSandboxProductDiagnostics\(\)[\s\S]*consumePendingAppleSignIn\(\)/);
 });
+test('deletion cleanup clears only the project-bound extension and native COMPR session',async()=>{
+ const messages=[];const scoped=`comprAuthSession:${ref}`;const data={
+  [scoped]:session(ref),comprAuthSession:session('taosgvfdnblnopaywimf'),unrelatedPreference:'keep'
+ };
+ const c=context(data,null,undefined,{},messages);
+ await c.auth.clearSession({clearNative:true,requireNative:true});
+ assert.equal(data[scoped],undefined);assert.equal(data.unrelatedPreference,'keep');assert.ok(data.comprAuthSession);
+ assert.equal(JSON.stringify(messages.at(-1)),JSON.stringify({action:'auth.clear',projectRef:ref}));
+ const reopened=context(data,null);assert.equal(await reopened.auth.getSession(),null);
+});
+test('native deletion cleanup removes COMPR session and Apple user only after project match',()=>{
+ const swift=fs.readFileSync(path.join(__dirname,'../../safari-mac-day-kit/container-app/SafariWebExtensionHandler.swift'),'utf8');
+ assert.match(swift,/message\["projectRef"\].*ComprNativeAuthConfig\.projectRef/);
+ assert.match(swift,/removeObject\(forKey: ComprNativeAuthConfig\.sessionKey\)/);
+ assert.match(swift,/removeObject\(forKey: ComprNativeAuthConfig\.appleUserKey\)/);
+ assert.doesNotMatch(swift,/removePersistentDomain|dictionaryRepresentation/);
+});

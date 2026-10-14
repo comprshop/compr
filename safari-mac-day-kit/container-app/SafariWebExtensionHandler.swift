@@ -24,7 +24,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
         if action == "auth.session" { authSession(context); return }
         if action == "auth.storeSession" { authStoreSession(context, message: message); return }
-        if action == "auth.clear" { authClear(context); return }
+        if action == "auth.clear" { authClear(context, message: message); return }
         if action == "auth.openApp" { openApp(context); return }
         if action == "diagnostic.product" { recordProductDiagnostic(context, message: message); return }
 
@@ -57,8 +57,13 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         complete(context, payload: ["ok": true, "session": session])
     }
 
-    private func authClear(_ context: NSExtensionContext) {
-        UserDefaults(suiteName: appGroup)?.removeObject(forKey: ComprNativeAuthConfig.sessionKey)
+    private func authClear(_ context: NSExtensionContext, message: [String: Any]) {
+        guard message["projectRef"] as? String == ComprNativeAuthConfig.projectRef,
+              let defaults = UserDefaults(suiteName: appGroup) else {
+            complete(context, payload: ["ok": false, "code": "AUTH_PROJECT_MISMATCH"]); return
+        }
+        defaults.removeObject(forKey: ComprNativeAuthConfig.sessionKey)
+        defaults.removeObject(forKey: ComprNativeAuthConfig.appleUserKey)
         complete(context, payload: ["ok": true])
     }
 

@@ -118,11 +118,16 @@ const ComprAuth = (() => {
     return refreshPromise;
   }
 
-  async function clearSession({ clearNative = false } = {}) {
+  async function clearSession({ clearNative = false, requireNative = false } = {}) {
     sessionGeneration += 1;
     await ComprBrowser.storage.local.remove(SESSION_KEY);
     if (clearNative && ComprRuntimeConfig.platform === "safari") {
-      await sendNative({ action: "auth.clear" });
+      const response = await sendNative({ action: "auth.clear", projectRef });
+      if (requireNative && response?.ok !== true) {
+        const error = new Error("Native COMPR session cleanup failed");
+        error.code = response?.code || "NATIVE_AUTH_CLEAR_FAILED";
+        throw error;
+      }
     }
   }
 
