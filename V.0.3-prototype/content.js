@@ -161,7 +161,9 @@ async function getProductInfo() {
   const eligibility = ComprProductEligibility.assessPage(document, window.location, { getPrice, getProductId, getPriceCurrency, getPriceProvenance, getSelectedSize });
   globalThis.__comprLastEligibilityDiagnostics = eligibility.diagnostics || {reason:eligibility.reason};
   if (!eligibility.eligible) {
-    console.info('[COMPR_PRODUCT_DIAGNOSTIC]', globalThis.__comprLastEligibilityDiagnostics);
+    if (globalThis.__comprDiagnosticsEnabled === true) {
+      console.info('[COMPR_PRODUCT_DIAGNOSTIC]', globalThis.__comprLastEligibilityDiagnostics);
+    }
     return null;
   }
   const jsonProduct = eligibility.jsonProduct;

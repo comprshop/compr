@@ -5,6 +5,7 @@ const ComprRuntimeConfig = Object.freeze({
   supabaseAnonKey: "sb_publishable_cZtYQI3ApFTw8kU2a2AoBQ_nGdlSw1W",
   authCallbackUrl: "https://comprshop.github.io/compr-website/auth-callback.html",
   mode: "development",
+  diagnosticsEnabled: true,
   betaMode: true,
   betaAccessUrl: "https://comprshop.github.io/compr-website/#beta-access",
   storeReviewUrl: "https://chromewebstore.google.com/detail/compr/opgdgckljdepjokbbdgahhbocdlkggkj/reviews",

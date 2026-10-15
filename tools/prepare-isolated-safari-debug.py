@@ -36,7 +36,7 @@ def prepare(credentials):
     manifest['web_accessible_resources'][0]['matches'] = [SUPABASE + '/*']
     (stage / 'manifest.json').write_text(json.dumps(manifest, indent=2))
     config = dict(apiBaseUrl=API, supabaseUrl=SUPABASE, supabaseAnonKey=public_key,
-                  authProjectRef=REF, authCallbackUrl='', mode='sandbox-debug', betaMode=True,
+                  authProjectRef=REF, authCallbackUrl='', mode='sandbox-debug', diagnosticsEnabled=True, betaMode=True,
                   betaAccessUrl='', storeReviewUrl='', appStoreReviewUrl='https://apps.apple.com/app/id6814896535?action=write-review',
                   platform='safari', guestMode=False)
     (stage / 'shared/runtimeConfig.js').write_text('const ComprRuntimeConfig = Object.freeze(' + json.dumps(config, indent=2) + ');\n')

@@ -61,7 +61,7 @@
     started = true;
     document.documentElement.classList.remove("chrome-popup");
     document.documentElement.classList.add("safari-popup");
-    const ui = Object.fromEntries(["Experience","Panel","Live","Loader","Eyebrow","Title","Copy","Guidance","GuidanceOne","GuidanceTwo","GuidanceThree","Welcome","WelcomeTitle","WelcomeFeatureOne","WelcomeFeatureTwo","WelcomeFeatureThree","Product","Image","ProductName","Store","Variant","SizeWarning","CurrentPrice","Savings","Saving","OldTotal","DealTotal","CurrentRetailer","DealRetailer","Shipping","Trust","SignIn","Primary","Privacy","UsageNote","Actions","Save","CouponsToggle","DetailsToggle","Coupons","Details","PlanAction","ProSheet","ProTitle","ChooseFree","TryPro","TryUltimate","Restore","NotNow","PlanMonthly","PlanYearly","PrivacyBadge","PrivacyLink","MatchLabel","CurrentTotalLabel","DealTotalLabel","TrackLabel","ProCopy","PlanLegend","MonthlyLabel","YearlyLabel","FreeCurrent","FreeFeatureOne","FreeFeatureTwo","PopularLabel","ProPrice","ProFeatureOne","ProFeatureTwo","UltimatePrice","UltimateFeatureOne","UltimateFeatureTwo","ProductStatus","RenewalCopy"]
+    const ui = Object.fromEntries(["Experience","Panel","Live","Loader","Eyebrow","Title","Copy","Guidance","GuidanceOne","GuidanceTwo","GuidanceThree","Welcome","WelcomeTitle","WelcomeFeatureOne","WelcomeFeatureTwo","WelcomeFeatureThree","Product","Image","ProductName","Store","Variant","SizeWarning","CurrentPrice","Savings","Saving","OldTotal","DealTotal","CurrentRetailer","DealRetailer","Shipping","Trust","SignIn","Primary","Privacy","UsageNote","Actions","Save","CouponsToggle","DetailsToggle","Coupons","Details","PlanAction","ProSheet","ProTitle","ChooseFree","TryPro","TryUltimate","Restore","NotNow","PlanMonthly","PlanYearly","PrivacyBadge","PrivacyLink","TermsLink","MatchLabel","CurrentTotalLabel","DealTotalLabel","TrackLabel","ProCopy","PlanLegend","MonthlyLabel","YearlyLabel","FreeCurrent","FreeFeatureOne","FreeFeatureTwo","PopularLabel","ProPrice","ProFeatureOne","ProFeatureTwo","UltimatePrice","UltimateFeatureOne","UltimateFeatureTwo","ProductStatus","RenewalCopy"]
       .map(name => [name[0].toLowerCase() + name.slice(1), document.getElementById(`safari${name}`)]));
     document.querySelectorAll(".app > :not(#safariExperience):not(#toast):not(#comparePrompt)").forEach(node => node.classList.add("safari-hidden"));
     document.querySelector(".app").classList.add("safari-mode");
@@ -83,7 +83,7 @@
       ["Continue Free","Ga gratis verder"],["Choose Pro","Kies Pro"],["Choose Ultimate","Kies Ultimate"],
       ["Not now","Niet nu"],["Nothing is checked until you tap.","We controleren pas nadat jij tikt."],
       ["Restore Purchases","Herstel aankopen"],["Sign in to choose a plan.","Log in om een abonnement te kiezen."],
-      ["Loading App Store prices…","App Store-prijzen laden…"],["Paid plans are temporarily unavailable.","Betaalde abonnementen zijn tijdelijk niet beschikbaar."],["Some paid plans are currently unavailable.","Sommige betaalde abonnementen zijn nu niet beschikbaar."],
+      ["Price unavailable","Prijs niet beschikbaar"],["Terms of Use","Gebruiksvoorwaarden"],["Loading App Store prices…","App Store-prijzen laden…"],["Paid plans are temporarily unavailable.","Betaalde abonnementen zijn tijdelijk niet beschikbaar."],["Some paid plans are currently unavailable.","Sommige betaalde abonnementen zijn nu niet beschikbaar."],
       ["Subscriptions renew automatically unless cancelled in your Apple Account.","Abonnementen worden automatisch verlengd, tenzij je ze opzegt in je Apple-account."],
       ["Sign in to compare prices","Log in om prijzen te vergelijken"],["COMPR uses your account to track price checks and recognise your plan and limit.","COMPR gebruikt je account om je prijschecks bij te houden en je abonnement en limiet te herkennen."],["Sign in with Apple","Log in met Apple"],
       ["You only need to sign in once.","Je hoeft maar één keer in te loggen."],
@@ -134,7 +134,7 @@
       const converted=ComprCurrency.convert(numeric,source,displayCurrency,exchangeRates.rates);
       return ComprCurrency.format(converted===null?numeric:converted,converted===null?source:displayCurrency,countryCode);
     }
-    [[ui.privacyLink,"Privacy"],[ui.matchLabel,"Verified cheaper match"],[ui.currentTotalLabel,"Current total"],[ui.dealTotalLabel,"Deal total"],[ui.trackLabel,"COMPR"],[ui.proTitle,"Choose your COMPR plan"],[ui.proCopy,"Find better prices. Choose how often you want to search."],[ui.planLegend,"Choose a billing period"],[ui.monthlyLabel,"Monthly"],[ui.yearlyLabel,"Yearly"],[ui.freeCurrent,"Current plan"],[ui.freeFeatureOne,"5 successful checks in your first month"],[ui.freeFeatureTwo,"3 successful checks per month after that"],[ui.popularLabel,"Popular"],[ui.proFeatureOne,"15 successful price checks per month"],[ui.proFeatureTwo,"For regular COMPR users"],[ui.ultimateFeatureOne,"50 successful price checks per month"],[ui.ultimateFeatureTwo,"For frequent price checking"],[ui.chooseFree,"Continue Free"],[ui.tryPro,"Choose Pro"],[ui.tryUltimate,"Choose Ultimate"],[ui.restore,"Restore Purchases"],[ui.notNow,"Not now"],[ui.renewalCopy,"Subscriptions renew automatically unless cancelled in your Apple Account."],[ui.save,"Save & Compare"],[ui.couponsToggle,"Coupons"],[ui.detailsToggle,"Details"],[ui.guidanceOne,"Open one specific product page"],[ui.guidanceTwo,"Wait until its price and options are visible"],[ui.guidanceThree,"Open COMPR again"],[ui.welcomeTitle,"One account. Clear choices."],[ui.welcomeFeatureOne,"Sign in securely with Apple"],[ui.welcomeFeatureTwo,"Choose monthly or yearly COMPR Pro"],[ui.welcomeFeatureThree,"Change or cancel later through Apple"]].forEach(([node,label])=>{if(node)node.textContent=tr(label);});
+    [[ui.privacyLink,"Privacy"],[ui.termsLink,"Terms of Use"],[ui.matchLabel,"Verified cheaper match"],[ui.currentTotalLabel,"Current total"],[ui.dealTotalLabel,"Deal total"],[ui.trackLabel,"COMPR"],[ui.proTitle,"Choose your COMPR plan"],[ui.proCopy,"Find better prices. Choose how often you want to search."],[ui.planLegend,"Choose a billing period"],[ui.monthlyLabel,"Monthly"],[ui.yearlyLabel,"Yearly"],[ui.freeCurrent,"Current plan"],[ui.freeFeatureOne,"5 successful checks in your first month"],[ui.freeFeatureTwo,"3 successful checks per month after that"],[ui.popularLabel,"Popular"],[ui.proFeatureOne,"15 successful price checks per month"],[ui.proFeatureTwo,"For regular COMPR users"],[ui.ultimateFeatureOne,"50 successful price checks per month"],[ui.ultimateFeatureTwo,"For frequent price checking"],[ui.chooseFree,"Continue Free"],[ui.tryPro,"Choose Pro"],[ui.tryUltimate,"Choose Ultimate"],[ui.restore,"Restore Purchases"],[ui.notNow,"Not now"],[ui.renewalCopy,"Subscriptions renew automatically unless cancelled in your Apple Account."],[ui.save,"Save & Compare"],[ui.couponsToggle,"Coupons"],[ui.detailsToggle,"Details"],[ui.guidanceOne,"Open one specific product page"],[ui.guidanceTwo,"Wait until its price and options are visible"],[ui.guidanceThree,"Open COMPR again"],[ui.welcomeTitle,"One account. Clear choices."],[ui.welcomeFeatureOne,"Sign in securely with Apple"],[ui.welcomeFeatureTwo,"Choose monthly or yearly COMPR Pro"],[ui.welcomeFeatureThree,"Change or cancel later through Apple"]].forEach(([node,label])=>{if(node)node.textContent=tr(label);});
     let product = null, productContext = null, observedTab = null, account = null, match = null, lastResponse = null, entitlement = { plan: "free" }, actionGeneration = 0, disposed = false, initialized = false, activationRefreshNeeded = false, refreshPromise = null;
     const store = ComprSafariExperience.createStore(render);
     let cooldownTimer=null,safetyUntil=0;
@@ -265,6 +265,7 @@
     }
 
     function safeProductDiagnostic(stage,tab,details={}) {
+      if (ComprRuntimeConfig.diagnosticsEnabled !== true) return null;
       const diagnostic={version:1,runId:productDiagnosticRunId,stage:String(stage||"unknown").slice(0,80),recordedAt:new Date().toISOString(),
         projectRef:String(ComprRuntimeConfig.authProjectRef||"").slice(0,32),tabId:Number.isInteger(tab?.id)?tab.id:null,
         tabUrl:String(tab?.url||"").slice(0,600),details};
@@ -277,19 +278,19 @@
         if (!tab?.id) { safeProductDiagnostic("active_tab_missing",null); return null; }
         safeProductDiagnostic("active_tab_resolved",tab);
         try {
-        const probe=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>globalThis.ComprBrowser?.adapterVersion==="compr-browser-adapter-v1"});
+        const probe=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:enabled=>{globalThis.__comprDiagnosticsEnabled=enabled===true;return globalThis.ComprBrowser?.adapterVersion==="compr-browser-adapter-v1";},args:[ComprRuntimeConfig.diagnosticsEnabled===true]});
         if (probe?.[0]?.result!==true) await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},files:["shared/browserAdapter.js"]});
         await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},files:["shared/productEligibility.js","shared/localeParsing.js", "detectors/price.js","detectors/brand.js","detectors/color.js","detectors/material.js","detectors/sizes.js","detectors/availability.js","detectors/policies.js","detectors/discountCodes.js","detectors/category.js","detectors/productId.js","detectors/productName.js","content.js"]});
         const result=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>typeof getProductInfo==="function"?getProductInfo():null});
         const extracted=result?.[0]?.result || null;
-        const diagnosticResult=await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>({
+        const diagnosticResult=ComprRuntimeConfig.diagnosticsEnabled === true ? await ComprBrowser.scripting.executeScript({target:{tabId:tab.id},func:()=>({
           eligibility:globalThis.__comprLastEligibilityDiagnostics||null,
           readyState:String(document.readyState||"unknown"),title:String(document.title||"").slice(0,240),
           h1:String(document.querySelector("h1")?.innerText||"").trim().slice(0,240),
           productMeta:Boolean(document.querySelector('meta[property="product:price:amount"], meta[property="og:price:amount"], meta[itemprop="price"]')),
           jsonLdBlocks:document.querySelectorAll('script[type="application/ld+json"]').length,
           structuredShape:typeof getProductRecognitionDiagnostics==="function"?getProductRecognitionDiagnostics():null
-        })});
+        })}) : [];
         const page=diagnosticResult?.[0]?.result||{};
         safeProductDiagnostic(extracted?"extraction_returned_product":"extraction_returned_empty",tab,{
           eligibility:page.eligibility||null,readyState:page.readyState||"unknown",documentTitle:page.title||"",h1:page.h1||"",
@@ -300,7 +301,7 @@
             gtin:String(extracted.gtin||"").slice(0,64),mpn:String(extracted.mpn||"").slice(0,64),
             productCode:String(extracted.productCode||"").slice(0,64),category:String(extracted.category||"").slice(0,100)}:null
         });
-        if(extracted)console.info('[COMPR_VARIANT_DIAGNOSTIC]',{selectedSize:extracted.selectedSize || null,
+        if(ComprRuntimeConfig.diagnosticsEnabled === true && extracted)console.info('[COMPR_VARIANT_DIAGNOSTIC]',{selectedSize:extracted.selectedSize || null,
           size:extracted.size || null,sizeRequired:extracted.sizeRequired===true,
           selectedVariants:root.ComprProduct.normalizeSelectedVariants(extracted),
           evidence:extracted.selectedVariantDiagnostics?.size?.evidence || null});
@@ -444,10 +445,6 @@
       }
     }
     let proSheetReturnFocus=null;
-    const fallbackPrices={
-      pro:{monthly:isDutch?"€ 2,99 / maand":"€2.99 / month",yearly:isDutch?"€ 19,99 / jaar":"€19.99 / year"},
-      ultimate:{monthly:isDutch?"€ 4,99 / maand":"€4.99 / month",yearly:isDutch?"€ 34,99 / jaar":"€34.99 / year"}
-    };
     let appleProducts=new Map(),appleProductsLoading=false,purchaseBusy=false;
     function billingCycle(){return ui.planMonthly.checked?"monthly":"yearly";}
     function productIdFor(tier){const cycle=billingCycle();return tier==="ultimate"?(cycle==="monthly"?ComprAppleBilling.PRODUCT_IDS.ultimateMonthly:ComprAppleBilling.PRODUCT_IDS.ultimateYearly):(cycle==="monthly"?ComprAppleBilling.PRODUCT_IDS.proMonthly:ComprAppleBilling.PRODUCT_IDS.proYearly);}
@@ -463,8 +460,8 @@
       const cycle=billingCycle(),period=tr(cycle==="monthly"?"Monthly":"Yearly").toLowerCase();
       const proId=cycle==="monthly"?ComprAppleBilling.PRODUCT_IDS.proMonthly:ComprAppleBilling.PRODUCT_IDS.proYearly;
       const ultimateId=cycle==="monthly"?ComprAppleBilling.PRODUCT_IDS.ultimateMonthly:ComprAppleBilling.PRODUCT_IDS.ultimateYearly;
-      ui.proPrice.textContent=appleProducts.has(proId)?`${appleProducts.get(proId).displayPrice} / ${period}`:fallbackPrices.pro[cycle];
-      ui.ultimatePrice.textContent=appleProducts.has(ultimateId)?`${appleProducts.get(ultimateId).displayPrice} / ${period}`:fallbackPrices.ultimate[cycle];
+      ui.proPrice.textContent=appleProducts.has(proId)?`${appleProducts.get(proId).displayPrice} / ${period}`:tr("Price unavailable");
+      ui.ultimatePrice.textContent=appleProducts.has(ultimateId)?`${appleProducts.get(ultimateId).displayPrice} / ${period}`:tr("Price unavailable");
       renderPlanAvailability();
     }
     async function refreshApplePrices(){

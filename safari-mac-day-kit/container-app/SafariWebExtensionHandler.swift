@@ -105,6 +105,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     }
 
     private func recordProductDiagnostic(_ context: NSExtensionContext, message: [String: Any]) {
+#if DEBUG
         guard message["projectRef"] as? String == ComprNativeAuthConfig.projectRef,
               let diagnostic = message["diagnostic"] as? [String: Any],
               JSONSerialization.isValidJSONObject(diagnostic),
@@ -126,6 +127,9 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         } catch {
             complete(context, payload: ["ok": false, "code": "DIAGNOSTIC_WRITE_FAILED"])
         }
+#else
+        complete(context, payload: ["ok": false, "code": "DIAGNOSTICS_DISABLED"])
+#endif
     }
 
     @available(iOS 15.0, macOS 12.0, *)
@@ -262,17 +266,9 @@ private enum ComprNativeAuthConfig {
 #endif
     }
     static var sessionKey: String {
-#if DEBUG
         return "comprAuthSession:\(projectRef)"
-#else
-        return "comprAuthSession"
-#endif
     }
     static var appleUserKey: String {
-#if DEBUG
         return "comprAppleUser:\(projectRef)"
-#else
-        return "comprAppleUser"
-#endif
     }
 }

@@ -1,10 +1,19 @@
 const ComprAuth = (() => {
   const projectRef = ComprRuntimeConfig.authProjectRef || "";
-  if (projectRef && (projectRef !== "uhvukecryuvosuascics" ||
+  if (ComprRuntimeConfig.mode === "production" && ComprRuntimeConfig.platform === "safari") {
+    if (projectRef !== "taosgvfdnblnopaywimf" ||
+        ComprRuntimeConfig.apiBaseUrl !== "https://compr-backend.onrender.com" ||
+        ComprRuntimeConfig.supabaseUrl !== "https://taosgvfdnblnopaywimf.supabase.co") {
+      throw new Error("PRODUCTION_RUNTIME_MISMATCH");
+    }
+  }
+  // BEGIN SANDBOX AUTH GUARD — omitted only from validated production staging.
+  else if (projectRef && (projectRef !== "uhvukecryuvosuascics" ||
       ComprRuntimeConfig.apiBaseUrl !== "https://compr-backend-sandbox.onrender.com" ||
       ComprRuntimeConfig.supabaseUrl !== `https://${projectRef}.supabase.co`)) {
     throw new Error("SANDBOX_RUNTIME_MISMATCH");
   }
+  // END SANDBOX AUTH GUARD
   const SESSION_KEY = projectRef ? `comprAuthSession:${projectRef}` : "comprAuthSession";
   function sessionIdentity(session) {
     if (!projectRef) return session?.user?.id || session?.user_id || null;

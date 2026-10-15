@@ -269,7 +269,7 @@ private enum ComprNativeAuthConfig {
         return "https://compr-backend-sandbox.onrender.com"
 #else
         guard let value = Bundle.main.object(forInfoDictionaryKey: "COMPRBackendURL") as? String,
-              value.hasPrefix("https://") else { preconditionFailure("PRODUCTION_BACKEND_CONFIGURATION_REQUIRED") }
+              value == "https://compr-backend.onrender.com" else { preconditionFailure("PRODUCTION_BACKEND_CONFIGURATION_REQUIRED") }
         return value
 #endif
     }
@@ -283,17 +283,9 @@ private enum ComprNativeAuthConfig {
 #endif
     }
     static var sessionKey: String {
-#if DEBUG
         return "comprAuthSession:\(projectRef)"
-#else
-        return "comprAuthSession"
-#endif
     }
     static var appleUserKey: String {
-#if DEBUG
         return "comprAppleUser:\(projectRef)"
-#else
-        return "comprAppleUser"
-#endif
     }
 }
